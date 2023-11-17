@@ -1,4 +1,6 @@
 # RaskAttack.github.io
 
 
-This is all my games from khan academy
+These are all my games and animations from Khan Academy.
+
+I will include other projects only with permission.
