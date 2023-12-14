@@ -1,0 +1,24 @@
+.maintitle {
+            color: black;
+            background: white;
+        }
+        .project-titles {
+            color: blue;
+            background: white;
+            border: 2px dotted rgb(0, 0, 0);
+        }      
+        .new-update {
+            color: white;
+            background: black;
+            border: 13px ridge rgb(0, 0, 0);
+        }
+        #watermark {
+            position: fixed;
+            bottom: 5px;
+            right: 10px;
+            border: 2px ridge rgb(255, 0, 0);
+        }
+
+        a:hover {
+            background: red;
+        }
