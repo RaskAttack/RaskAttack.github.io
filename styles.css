@@ -1,11 +1,13 @@
-.maintitle {
+       .maintitle {
             color: black;
             background: white;
+            text-align: center;
         }
         .project-titles {
             color: blue;
             background: white;
             border: 2px dotted rgb(0, 0, 0);
+            text-align: center;
         }      
         .new-update {
             color: white;
