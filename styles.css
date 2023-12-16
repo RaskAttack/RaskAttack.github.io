@@ -24,3 +24,7 @@
         a:hover {
             background: red;
         }
+
+        .projects {
+               margin: 0 auto;
+        }
