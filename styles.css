@@ -29,10 +29,14 @@
         .projects {
                margin: 0 auto;
                text-align: center;
-               border: 2px ridge rgb(0, 0, 0);
+               
         }
 
        .center {
               text-align: center;
               margin: 0 auto;
+       }
+
+       .embedded {
+             border: 2px ridge rgb(0, 0, 0); 
        }
