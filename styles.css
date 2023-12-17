@@ -29,6 +29,7 @@
         .projects {
                margin: 0 auto;
                text-align: center;
+               border: 2px line black;
         }
 
        .center {
