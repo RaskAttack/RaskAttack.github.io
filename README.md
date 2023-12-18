@@ -1,7 +1,7 @@
 # RaskAttack.github.io
 
+This is a fun website that has a bunch of random stuff
 
-These are all my games from Khan Academy.
-My website will include other projects in the "other games by other people" section.
+# !!THIS IS FOR FUN!!
 
 *!! THIS IS JUST A TEST WEBSITE !!*
