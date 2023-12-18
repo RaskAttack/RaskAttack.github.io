@@ -1,3 +1,8 @@
 .maintitle {
-  text-align: center;
+   text-align: center;
+}
+
+#maintitle1 {
+   background-color: #f2f2f2;
+   
 }
