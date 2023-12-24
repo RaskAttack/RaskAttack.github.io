@@ -1,1 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Empty Webpage</title>
+    </head>
+    <body>
+        <div class="navbar"> 
+            <a href="https://raskattack.github.io/Rask%20Guitars/raskhome">
+            <img src="https://raskattack.github.io/Rask%20Logo%202022%20Gif.gif" alt="Rask Logo" width="50">
+            </a>
+            <!-- Home -->
+  <a href="https://raskattack.github.io/Rask%20Guitars/raskhome">Home</a>
+            <!-- Guitars -->
+  <div class="subnav">
+    <button class="subnavbtn">Guitars ▼<i class="fa fa-caret-down"></i></button>
+    <div class="subnav-content">
+      <a href="https://raskattack.github.io/Rask%20Guitars/rasktransendseries">Transcend Series</a>
+      <a href="#team">Enligten Series</a>
+      <a href="#careers">Available Now</a>
+      <a href="#k">The Ultimate Gift</a>
+      <a href="#e">The Builder Experience</a>
+    </div>
+  </div> 
+     <!-- Artists -->       
+  <a href="#i">Artists</a>
+     <!-- Gallery -->
+  <a href="#p">Gallery</a>
+     <!-- Contact -->
+  <div class="subnav">
+    <button class="subnavbtn">Contact ▼<i class="fa fa-caret-down"></i></button>
+    <div class="subnav-content">
+      <a href="#link1">Web Form</a>
+      <a href="#link2">Email Sign up list</a>
+      <a href="#link3">Follow us on Social Media</a>
+      <a href="#link4">About</a>
+    </div>
+  </div>
+</div>
 
+    </body>
+</html>
