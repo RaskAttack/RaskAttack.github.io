@@ -3,6 +3,8 @@
     <head>
         <meta charset="utf-8">
         <title>Transend Series</title>
+        <link rel="icon" type="image/x-icon" href="https://raskattack.github.io/Rask%20Logo%202022%20Gif.gif">
+        <link rel="stylesheet" href="raskstyles.css">
     </head>
     <body>
         <div class="navbar"> 
