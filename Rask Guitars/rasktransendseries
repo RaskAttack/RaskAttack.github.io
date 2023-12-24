@@ -2,7 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <title>Empty Webpage</title>
+        <title>Transend Series</title>
     </head>
     <body>
         <div class="navbar"> 
@@ -10,7 +10,7 @@
             <img src="https://raskattack.github.io/Rask%20Logo%202022%20Gif.gif" alt="Rask Logo" width="50">
             </a>
             <!-- Home -->
-  <a href="https://raskattack.github.io/Rask%20Guitars/raskhome">Home</a>
+      <a href="https://raskattack.github.io/Rask%20Guitars/raskhome">Home</a>
             <!-- Guitars -->
   <div class="subnav">
     <button class="subnavbtn">Guitars ▼<i class="fa fa-caret-down"></i></button>
