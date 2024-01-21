@@ -7,12 +7,14 @@
         <link rel="stylesheet" href="raskstyles.css">
     </head>
     <body>
+          
+       
         <div class="navbar"> 
             <a href="https://raskattack.github.io/Rask%20Guitars/raskhome">
             <img src="https://raskattack.github.io/Rask%20Logo%202022%20Gif.gif" alt="Rask Logo" width="50">
             </a>
             <!-- Home -->
-      <a href="https://raskattack.github.io/Rask%20Guitars/raskhome">Home</a>
+  <a href="https://raskattack.github.io/Rask%20Guitars/raskhome">Home</a>
             <!-- Guitars -->
   <div class="subnav">
     <button class="subnavbtn">Guitars ▼<i class="fa fa-caret-down"></i></button>
@@ -39,100 +41,14 @@
     </div>
   </div>
 </div>
-
-
-        <!-- Slide Show -->
-        <div class="slideshow-container">
-
-<div class="mySlides fade">
-  <div class="numbertext">1 / 7</div>
-  <img src="Orphan Orange.jpg" style="width:50%">
-  <div class="text">Orphan Orange</div>
-</div>
-
-<div class="mySlides fade">
-  <div class="numbertext">2 / 7</div>
-  <img src="The Ancient One Stylized.jpg" style="width:50%">
-  <div class="text">The Ancient One Stylized</div>
-</div>
-
-<div class="mySlides fade">
-  <div class="numbertext">3 / 7</div>
-  <img src="The Ancient One.jpg" style="width:50%">
-  <div class="text">The Ancient One</div>
-</div>
-
-<div class="mySlides fade">
-  <div class="numbertext">4 / 7</div>
-  <img src="The Dancer.jpg" style="width:50%">
-  <div class="text">The Dancer</div>
-</div>
-
-<div class="mySlides fade">
-  <div class="numbertext">5 / 7</div>
-  <img src="The Messanger.jpg" style="width:50%">
-  <div class="text">The Messanger</div>
-</div>
-
-<div class="mySlides fade">
-  <div class="numbertext">6 / 7</div>
-  <img src="The Outlaw 2.jpg" style="width:50%">
-  <div class="text">The Outlaw</div>
-</div>
-
-<div class="mySlides fade">
-  <div class="numbertext">7 / 7</div>
-  <img src="The Sleeper.jpg" style="width:50%">
-  <div class="text">The Sleeper</div>
-</div>
-
-
-
-<a class="prev" onclick="plusSlides(-1)">❮</a>
-<a class="next" onclick="plusSlides(1)">❯</a>
-
-</div>
-<br>
-
-<div style="text-align:center">
-  <span class="dot" onclick="currentSlide(1)"></span> 
-  <span class="dot" onclick="currentSlide(2)"></span> 
-  <span class="dot" onclick="currentSlide(3)"></span> 
-  <span class="dot" onclick="currentSlide(4)"></span> 
-  <span class="dot" onclick="currentSlide(5)"></span> 
-  <span class="dot" onclick="currentSlide(6)"></span> 
-  <span class="dot" onclick="currentSlide(7)"></span> 
-</div>
-
-
-        <script>
-let slideIndex = 1;
-showSlides(slideIndex);
-
-function plusSlides(n) {
-  showSlides(slideIndex += n);
-}
-
-function currentSlide(n) {
-  showSlides(slideIndex = n);
-}
-
-function showSlides(n) {
-  let i;
-  let slides = document.getElementsByClassName("mySlides");
-  let dots = document.getElementsByClassName("dot");
-  if (n > slides.length) {slideIndex = 1}    
-  if (n < 1) {slideIndex = slides.length}
-  for (i = 0; i < slides.length; i++) {
-    slides[i].style.display = "none";  
-  }
-  for (i = 0; i < dots.length; i++) {
-    dots[i].className = dots[i].className.replace(" active", "");
-  }
-  slides[slideIndex-1].style.display = "block";  
-  dots[slideIndex-1].className += " active";
-}
-</script>
-
+        
+        <h1></h1>
+        <footer>
+            <a target="_blank" href="https://www.facebook.com/RaskGuitars">Facebook</a><br>
+            <a target="_blank" href="https://www.instagram.com/RaskGuitars/">Instgram</a><br>
+            <a href="https://raskattack.github.io">
+                <button class="maintitle">Go to home</button>
+            </a>
+        </footer>
     </body>
 </html>
