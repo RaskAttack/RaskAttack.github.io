@@ -3,6 +3,7 @@
 }
 
 #footer {
-       background: #8c8c8c;
+       background: #777;
        text_align: center;
+       grid-template-columns: 0% 100% 0%;
 }
