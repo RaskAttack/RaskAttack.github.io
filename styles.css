@@ -1,42 +1,8 @@
-       .maintitle {
-            color: black;
-            background: white;
-            text-align: center;
-        }
-        .project-titles {
-            color: blue;
-            background: white;
-            border: 2px dotted rgb(0, 0, 0);
-            text-align: center;
-        }      
-        .new-update {
-            color: white;
-            background: black;
-            border: 13px ridge rgb(0, 0, 0);
-            text-align: center;
-        }
-        #watermark {
-            position: fixed;
-            bottom: 5px;
-            right: 10px;
-            border: 2px ridge rgb(255, 0, 0);
-        }
+.center {
+       text-align: center;
+}
 
-        a:hover {
-            background: red;
-        }
-
-        .projects {
-               margin: 0 auto;
-               text-align: center;
-               
-        }
-
-       .center {
-              text-align: center;
-              margin: 0 auto;
-       }
-
-       .embedded {
-             border: 2px ridge rgb(0, 0, 0); 
-       }
+#footer {
+       background: #8c8c8c;
+       
+}
