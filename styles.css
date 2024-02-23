@@ -5,5 +5,5 @@
 #footer {
        background: #777;
        text_align: center;
-       grid-template-columns: 0% 100% 0%;
+       align-self: center;
 }
