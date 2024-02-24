@@ -7,13 +7,6 @@
        text_align: center;
        align-self: center;
        margin: auto;
-       /* test stuff */
-       background-color: black;
-         color: white;
-         padding: 15px 25px;
-       text-align: center;
-         text-decoration: none;
-         display: inline-block;
 }
 #header {
        background: #e60000;
