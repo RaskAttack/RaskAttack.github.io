@@ -8,3 +8,11 @@
        align-self: center;
        margin: 0auto;
 }
+#header {
+       background: #e60000;
+       color: white;
+       text-align: center;
+}
+#body {
+       /* Nothing here */
+}
