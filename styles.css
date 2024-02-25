@@ -1,7 +1,13 @@
 body {
-        font-family: "Kanit", sans-serif;
-        font-weight: 400;
-        font-style: normal;
+        /* <uniquifier>: Use a uniquifier for the class name
+         <weight>: Use a value from 400 to 700*/
+
+
+          font-family: "Kode Mono", monospace;
+          font-optical-sizing: auto;
+          font-weight: 500;
+          font-style: normal;
+
 } 
 
 .center {
