@@ -18,5 +18,8 @@ body {
   width: 100%;
   padding: 20px 10%;
   background: #00ccff;
-  
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 100;
 }
