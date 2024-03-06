@@ -49,6 +49,8 @@ body {
   display: flex;
   align-items: center;
   padding: 0 10%;
+  color: white;
+  
 }
 
 .home-content {
@@ -58,7 +60,6 @@ body {
   font-size: 56px;
   font-weight: 700;
   line-hight: 1.2;
-  color: white;
 }
 .home-content h3 {
   font-size: 32px;
