@@ -56,9 +56,12 @@ body {
 }
 .home-content h1 {
   font-size: 56px;
+  font-weight: 700;
 }
 .home-content h3 {
   font-size: 32px;
+  font-weight: 700;
+  color: #00abf0;
 }
 
 .home-content p {
@@ -85,5 +88,8 @@ body {
   font-weight: 600;
   letter-spacing: 1px;
 }
-  
+
+.btn-box a:nth-child(2) {
+  background: transparent;
+}
   
