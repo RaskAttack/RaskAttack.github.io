@@ -44,7 +44,7 @@ body {
   color: #00abf0;
 }
 
-.home{
+.home {
   hight: 100vh;
   display: flex;
   align-items: center;
@@ -57,6 +57,8 @@ body {
 .home-content h1 {
   font-size: 56px;
   font-weight: 700;
+  line-hight: 1.2;
+  color: white;
 }
 .home-content h3 {
   font-size: 32px;
@@ -66,6 +68,7 @@ body {
 
 .home-content p {
   font-size: 16px;
+  margin: 20px 0 40px;
 }
 
 .home-content .btn-box {
