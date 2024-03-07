@@ -94,6 +94,7 @@ body {
   justify-items: center;
   align-items: center;
   z-index: 1;
+  overflow: hidden;
 }
 
 .btn-box a:nth-child(2) {
