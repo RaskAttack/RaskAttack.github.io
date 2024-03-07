@@ -108,6 +108,6 @@ body {
   left: 0;
   width: 100%;
   hight: 100%;
-  background: red;
+  background: #ff0000;
   z-index: -1;
 }
