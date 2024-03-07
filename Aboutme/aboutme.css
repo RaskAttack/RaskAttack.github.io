@@ -93,6 +93,7 @@ body {
   letter-spacing: 1px;
   justify-items: center;
   align-items: center;
+  z-index: 1;
 }
 
 .btn-box a:nth-child(2) {
