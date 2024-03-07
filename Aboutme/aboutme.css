@@ -45,11 +45,10 @@ body {
 }
 
 .home {
-  hight: 100vh;
+  height: 100vh;
   display: flex;
   align-items: center;
   padding: 0 10%;
-  color: white;
   
 }
 
@@ -95,5 +94,17 @@ body {
 
 .btn-box a:nth-child(2) {
   background: transparent;
+  color: #00abf0;
 }
-  
+
+
+.btn-box a::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  hight: 100%;
+  color: red;
+  z-index: -1;
+}
