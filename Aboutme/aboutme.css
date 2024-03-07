@@ -79,6 +79,7 @@ body {
 }
 
 .btn-box a {
+  position: relative;
   display: inline-flex;
   width: 150px;
   height: 100%;
@@ -90,6 +91,8 @@ body {
   text-decoration: none;
   font-weight: 600;
   letter-spacing: 1px;
+  justify-items: center;
+  align-items: center;
 }
 
 .btn-box a:nth-child(2) {
@@ -105,6 +108,6 @@ body {
   left: 0;
   width: 100%;
   hight: 100%;
-  color: red;
+  background: red;
   z-index: -1;
 }
