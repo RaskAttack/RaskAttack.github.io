@@ -29,3 +29,22 @@ body {
 #body {
        /* Nothing here */
 }
+
+#about {
+  position: relative;
+  display: inline-flex;
+  width: 150px;
+  height: 100%;
+  background: #00abf0;
+  border: 2px solid #00abf0;
+  border-radius: 8px;
+  font-size: 19px;
+  color: #081b29;
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: 1px;
+  justify-items: center;
+  align-items: center;
+  z-index: 1;
+  overflow: hidden;
+}
