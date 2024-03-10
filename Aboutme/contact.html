@@ -3,8 +3,63 @@
   <head>
     <title>Website Name</title>
     <link rel="stylesheet" href="style.css">
+    <!-- font start -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anta&display=swap" rel="stylesheet">
+    <!-- font end -->
+    <!-- icon start -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <!-- icon end -->
   </head>
   <body>
+    <header class="header"> 
+      <a href="#" class="logo">Jacob.</a>
+
+      <nav class="navbar"> 
+        <a href="#">Home</a>
+        <a href="#">About</a>
+        <a href="#">Services</a>
+        <a href="#">Portfolio</a>
+        <a href="#">Contact</a>
+        <a href="https://raskattack.github.io">
+          <span class="material-symbols-outlined">
+            home
+          </span>
+        </a>
+      </nav>
+    </header>
     
+    <section class="contact">
+      <h2>Contact Me!</h2>
+
+      <form action="#">
+        <div class="input-box">
+          <div class="input-field field">
+            <input type="text" placeholder="Full Name" id="name" class="item" autocomplete="off">
+          </div>
+          <div class="input-field field">
+            <input type="text" placeholder="Email Address" id="email" class="item" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="input-box">
+          <div class="input-field field">
+            <input type="text" placeholder="Phone Number" id="phone" class="item" autocomplete="off">
+          </div>
+          <div class="input-field field">
+            <input type="text" placeholder="Subject" id="subject" class="item" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="textarea-field field">
+          <textarea name="" id="massage" cols="30" rows="10" placeholder="Your Message" class="item" autocomplete="off"></textarea>
+        </div>
+
+        <button type="submit">Send Message</button>
+      </form>
+    </section>
+    <script src="contact.js"></script>
   </body>
 </html>
