@@ -87,8 +87,21 @@ form .input-box {
   color: rgba(255. 255, 255, .3);
 }
 
+.field .error-txt {
+  font-size: 14.5px;
+  color: #d93025;
+  text-align: left;
+  margin: -5px - 1-px;
+  display: none;
+}
+
+
 form .textarea-field .item {
   resize: none;
+}
+
+form .textarea-field .error-txt {
+  margin-top: -10px;
 }
 
 form button {
@@ -110,3 +123,5 @@ form button {
 form button:hover {
   box-shadow: none;
 }
+
+
