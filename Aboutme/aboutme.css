@@ -113,7 +113,7 @@ body {
   background: #00abf0;
 }
 
-.btn-box a:nth-child(2)::hover {
+.btn-box a:nth-child(2):hover {
   color: #081b29;
 }
 
