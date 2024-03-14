@@ -46,6 +46,7 @@ body {
 
 .home {
   height: 100vh;
+  background: url('');
   display: flex;
   align-items: center;
   padding: 0 10%;
@@ -164,8 +165,14 @@ body {
   color: #00abf0;
   text-decoration: none;
   z-index: 1;
+  overflow: hidden;
+  transition: .5s;
   
   
+}
+
+.home-sci a box-icon:hover {
+  fill: #081b29;
 }
 
 .home-sci a::before {
@@ -184,6 +191,7 @@ body {
   width: 100%;
 }
 
-.home-sci box-icon{
-  color: #b00abf0;
+.home-sci a box-icon {
+  fill: #00abf0;
 }
+  
