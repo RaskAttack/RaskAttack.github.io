@@ -86,7 +86,13 @@ const quizData = [
       <h1>Quiz Completed!</h1>
       <p>Your score: ${score}/${quizData.length}</p>
     `;
+        var restart = document.getElementById("restart");
 
+     var onButtonClick = function() {
+        location.reload();
+      }
+
+      restart.addEventListener("click", onButtonClick);
       
       
   }
