@@ -85,6 +85,7 @@ const quizData = [
     quiz.innerHTML = `
       <h1>Quiz Completed!</h1>
       <p>Your score: ${score}/${quizData.length}</p>
+      <button id="restart"> Restart </button>
     `;
         var restart = document.getElementById("restart");
 
