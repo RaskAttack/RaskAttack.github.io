@@ -40,7 +40,14 @@ const quizData = [
   const questionElement = document.getElementById("question");
   const optionsElement = document.getElementById("options");
   const submitButton = document.getElementById("submit");
-  
+  var restart = document.getElementById("restart");
+
+     var onButtonClick = function() {
+        location.reload();
+      }
+
+      restart.addEventListener("click", onButtonClick);
+
   let currentQuestion = 0;
   let score = 0;
   
@@ -79,6 +86,9 @@ const quizData = [
       <h1>Quiz Completed!</h1>
       <p>Your score: ${score}/${quizData.length}</p>
     `;
+
+      
+      
   }
   
   showQuestion();
