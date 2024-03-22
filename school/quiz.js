@@ -5,9 +5,9 @@ const quizData = [
       answer: "38.5"
     },
     {
-      question: "What is the highest common factor of the numbers 30 and 132?",
-      options: ["2.6", "8", "4.9", "6"],
-      answer: "6"
+      question: "7 / 66 over 12",
+      options: ["462/84", "100/782", "84/462", "782/100"],
+      answer: "84/462"
     },
     {
       question: "123+4-5+67-89 = ?",
@@ -15,9 +15,9 @@ const quizData = [
       answer: "100"
     },
     {
-      question: "From the number 0 to the number 1000, the letter “A” appears only in?",
-      options: ["100", "3000", "1000", "1050"],
-      answer: "1000"
+      question: "8 * 44/99",
+      options: ["777/1723", "5278/754", "2845/88", "3520/99"],
+      answer: "3520/99"
     },
     {
       question: "If 1=3, 2=3, 3=5, 4=4, and 5=4, what is 6=?",
@@ -25,9 +25,9 @@ const quizData = [
       answer: "3"
     },
     {
-      question: "Which number is the equivalent to 3^(4)/3^(2)?",
-      options: ["-3", "9", "3.3", "4"],
-      answer: "9"
+      question: "4032 * 445/325",
+      options: ["845270984375/234857092834", "009807774/72745", "338778/342", "1794240/1310400"],
+      answer: "1794240/1310400"
     },
     {
       question: "Using only the process of addition, how to add eight 8’s to get the final number of 1000?",
@@ -70,6 +70,7 @@ const quizData = [
   
     if (selectedButton.innerText === answer) {
       score++;
+      
     }
   
     currentQuestion++;
@@ -87,6 +88,8 @@ const quizData = [
       <p>Your score: ${score}/${quizData.length}</p>
       <button id="restart"> Restart </button>
 
+
+
       <a href="https://raskattack.github.io">
         <button id="home">Go home</button>
       </a>
@@ -96,6 +99,8 @@ const quizData = [
 
      var onButtonClick = function() {
         location.reload();
+
+         
       }
 
       restart.addEventListener("click", onButtonClick);
