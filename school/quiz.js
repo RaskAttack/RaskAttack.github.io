@@ -86,6 +86,11 @@ const quizData = [
       <h1>Quiz Completed!</h1>
       <p>Your score: ${score}/${quizData.length}</p>
       <button id="restart"> Restart </button>
+
+      <a href="https://raskattack.github.io">
+        <button id="home">Go home</button>
+      </a>
+      
     `;
         var restart = document.getElementById("restart");
 
@@ -94,6 +99,7 @@ const quizData = [
       }
 
       restart.addEventListener("click", onButtonClick);
+
       
       
   }
