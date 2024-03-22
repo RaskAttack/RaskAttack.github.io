@@ -1,8 +1,8 @@
 const quizData = [
     {
-      question: "What is 7 * 66/12?",
-      options: ["38 1/2", "79", "11 1/8", "7 11/15"],
-      answer: "38 1/2"
+      question: "What is (7 * 66) / 12?",
+      options: ["38.5", "79", "11.8", "7.10"],
+      answer: "38.5"
     },
     {
       question: "What is the highest common factor of the numbers 30 and 132?",
