@@ -1,11 +1,11 @@
 const quizData = [
     {
-      question: "What is (7 * 66) / 12?",
-      options: ["38.5", "79", "11.8", "7.10"],
-      answer: "38.5"
+      question: "47/29 - 1/29",
+      options: ["46/29", "66/93", "48/29", "47/28"],
+      answer: "46/29"
     },
     {
-      question: "7 / 66 over 12",
+      question: "7 / 66/12",
       options: ["462/84", "100/782", "84/462", "782/100"],
       answer: "84/462"
     },
