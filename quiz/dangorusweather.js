@@ -109,7 +109,7 @@ const quizData = [
 
 
 
-      <a href="https://raskattack.github.io">
+      <a href="https://raskattack.github.io/quiz/quiznav">
         <button id="home">Go home</button>
       </a>
       
