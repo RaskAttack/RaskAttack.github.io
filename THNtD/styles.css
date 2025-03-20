@@ -1,0 +1,52 @@
+body {
+    font-family: "Pixelify Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    background-color: lightgray;
+    text-align: center; /* Centering all content */
+    padding: 0px;
+    margin: 0px;
+}
+
+.button-container {
+    display: flex; /* Aligns buttons in a row */
+    justify-content: center; /* Centers buttons horizontally */
+    gap: 20px; /* Adds space between buttons */
+    margin-top: 20px; /* Adds spacing below the header */
+}
+
+a {
+    text-decoration: none; /* Removes underline from links */
+}
+
+.round {
+    border-radius: 25px;
+    padding: 10px 20px;
+    text-align: center;
+    width: 135px; /* Ensures both buttons are same width */
+    height: 80px; /* Ensures both buttons are same height */
+    display: flex;
+    align-items: center; /* Centers text vertically */
+    justify-content: center; /* Centers text horizontally */
+    background-color: black;
+    color: white;
+    font-size: 16px;
+}
+
+.header {
+    margin-top: 10px;
+    text-align:center;
+    color: black;
+}
+
+.footer {
+    text-align: left;
+    background-color: gray;
+    padding: 10px;
+    margin: 0px;
+    position: absolute;
+    right: 0;
+    left: 0;
+    bottom: 0;
+}
