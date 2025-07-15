@@ -24,9 +24,8 @@
 		scene.clearColor = new BABYLON.Color3(0, 0, 0);
 			//===TRACK CODE===//
 
-			var _xFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.025)+(3*t*Math.pow((1-t),2)*0.1)+(3*Math.pow(t,2)*(1-t)*0.1625)+(Math.pow(t,3)*0.3125)},function(t) {return (Math.pow((1-t),3)*0.3125)+(3*t*Math.pow((1-t),2)*0.4625)+(3*Math.pow(t,2)*(1-t)*0.71)+(Math.pow(t,3)*0.785)},function(t) {return (Math.pow((1-t),3)*0.785)+(3*t*Math.pow((1-t),2)*0.86)+(3*Math.pow(t,2)*(1-t)*0.435)+(Math.pow(t,3)*0.6675)},function(t) {return (Math.pow((1-t),3)*0.6675)+(3*t*Math.pow((1-t),2)*0.9)+(3*Math.pow(t,2)*(1-t)*0.975)+(Math.pow(t,3)*0.9)},function(t) {return (Math.pow((1-t),3)*0.9)+(3*t*Math.pow((1-t),2)*0.825)+(3*Math.pow(t,2)*(1-t)*0.82)+(Math.pow(t,3)*0.735)},function(t) {return (Math.pow((1-t),3)*0.735)+(3*t*Math.pow((1-t),2)*0.65)+(3*Math.pow(t,2)*(1-t)*0.31)+(Math.pow(t,3)*0.31)},function(t) {return (Math.pow((1-t),3)*0.31)+(3*t*Math.pow((1-t),2)*0.31)+(3*Math.pow(t,2)*(1-t)*0.1775)+(Math.pow(t,3)*0.0675)},function(t) {return (Math.pow((1-t),3)*0.0675)+(3*t*Math.pow((1-t),2)*-0.0425)+(3*Math.pow(t,2)*(1-t)*0.035)+(Math.pow(t,3)*0.0325)}];var i = Math.max(0,Math.min(7, Math.floor(t * 8)));return fns[i]((t - (i/8)) * 8);};
-var _yFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.2)+(3*t*Math.pow((1-t),2)*0.025)+(3*Math.pow(t,2)*(1-t)*0.025)+(Math.pow(t,3)*0.4403125)},function(t) {return (Math.pow((1-t),3)*0.4403125)+(3*t*Math.pow((1-t),2)*0.855625)+(3*Math.pow(t,2)*(1-t)*0.4803125)+(Math.pow(t,3)*0.6553125)},function(t) {return (Math.pow((1-t),3)*0.6553125)+(3*t*Math.pow((1-t),2)*0.8303125)+(3*Math.pow(t,2)*(1-t)*0.9028125)+(Math.pow(t,3)*0.9728125)},function(t) {return (Math.pow((1-t),3)*0.9728125)+(3*t*Math.pow((1-t),2)*1.0428125)+(3*Math.pow(t,2)*(1-t)*0.8328125)+(Math.pow(t,3)*0.3978125)},function(t) {return (Math.pow((1-t),3)*0.3978125)+(3*t*Math.pow((1-t),2)*-0.0371875)+(3*Math.pow(t,2)*(1-t)*0.3778125)+(Math.pow(t,3)*0.1928125)},function(t) {return (Math.pow((1-t),3)*0.1928125)+(3*t*Math.pow((1-t),2)*0.0078125)+(3*Math.pow(t,2)*(1-t)*0.1328125)+(Math.pow(t,3)*0.1328125)},function(t) {return (Math.pow((1-t),3)*0.1328125)+(3*t*Math.pow((1-t),2)*0.1328125)+(3*Math.pow(t,2)*(1-t)*0.0553125)+(Math.pow(t,3)*0.0578125)},function(t) {return (Math.pow((1-t),3)*0.0578125)+(3*t*Math.pow((1-t),2)*0.0603125)+(3*Math.pow(t,2)*(1-t)*0.1303125)+(Math.pow(t,3)*0.2028125)}];var i = Math.max(0,Math.min(7, Math.floor(t * 8)));return fns[i]((t - (i/8)) * 8);};
-
+			var _xFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.0325)+(3*t*Math.pow((1-t),2)*0.1)+(3*Math.pow(t,2)*(1-t)*0.1625)+(Math.pow(t,3)*0.3125)},function(t) {return (Math.pow((1-t),3)*0.3125)+(3*t*Math.pow((1-t),2)*0.4625)+(3*Math.pow(t,2)*(1-t)*0.71)+(Math.pow(t,3)*0.785)},function(t) {return (Math.pow((1-t),3)*0.785)+(3*t*Math.pow((1-t),2)*0.86)+(3*Math.pow(t,2)*(1-t)*0.435)+(Math.pow(t,3)*0.6675)},function(t) {return (Math.pow((1-t),3)*0.6675)+(3*t*Math.pow((1-t),2)*0.9)+(3*Math.pow(t,2)*(1-t)*0.975)+(Math.pow(t,3)*0.9)},function(t) {return (Math.pow((1-t),3)*0.9)+(3*t*Math.pow((1-t),2)*0.825)+(3*Math.pow(t,2)*(1-t)*0.82)+(Math.pow(t,3)*0.735)},function(t) {return (Math.pow((1-t),3)*0.735)+(3*t*Math.pow((1-t),2)*0.65)+(3*Math.pow(t,2)*(1-t)*0.4225)+(Math.pow(t,3)*0.46)},function(t) {return (Math.pow((1-t),3)*0.46)+(3*t*Math.pow((1-t),2)*0.4975)+(3*Math.pow(t,2)*(1-t)*0.5725)+(Math.pow(t,3)*0.45)}];var i = Math.max(0,Math.min(6, Math.floor(t * 7)));return fns[i]((t - (i/7)) * 7);};
+var _yFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.2003125)+(3*t*Math.pow((1-t),2)*0.025)+(3*Math.pow(t,2)*(1-t)*0.025)+(Math.pow(t,3)*0.4403125)},function(t) {return (Math.pow((1-t),3)*0.4403125)+(3*t*Math.pow((1-t),2)*0.855625)+(3*Math.pow(t,2)*(1-t)*0.4803125)+(Math.pow(t,3)*0.6553125)},function(t) {return (Math.pow((1-t),3)*0.6553125)+(3*t*Math.pow((1-t),2)*0.8303125)+(3*Math.pow(t,2)*(1-t)*0.9028125)+(Math.pow(t,3)*0.9728125)},function(t) {return (Math.pow((1-t),3)*0.9728125)+(3*t*Math.pow((1-t),2)*1.0428125)+(3*Math.pow(t,2)*(1-t)*0.8328125)+(Math.pow(t,3)*0.3978125)},function(t) {return (Math.pow((1-t),3)*0.3978125)+(3*t*Math.pow((1-t),2)*-0.0371875)+(3*Math.pow(t,2)*(1-t)*0.3778125)+(Math.pow(t,3)*0.1928125)},function(t) {return (Math.pow((1-t),3)*0.1928125)+(3*t*Math.pow((1-t),2)*0.0078125)+(3*Math.pow(t,2)*(1-t)*0.0403125)+(Math.pow(t,3)*0.2103125)},function(t) {return (Math.pow((1-t),3)*0.2103125)+(3*t*Math.pow((1-t),2)*0.3803125)+(3*Math.pow(t,2)*(1-t)*0.4278125)+(Math.pow(t,3)*0.3403125)}];var i = Math.max(0,Math.min(6, Math.floor(t * 7)));return fns[i]((t - (i/7)) * 7);};
 
 			//===END TRACK CODE===//
 
@@ -77,6 +76,11 @@ var _yFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.2)+(
 			if (keys.d) {
 				playerSphere.applyImpulse(right, playerSphere.getAbsolutePosition());
 			}
+			var currentT = tLookup(xFn, zFn, 500, playerSphere.position.x, playerSphere.position.z);
+			if (currentT > 0.99) {
+				win();
+			}
+
 			if (playerSphere.position.y < -10) {
 				lost();
 			}
@@ -85,7 +89,7 @@ var _yFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.2)+(
 			var point = BABYLON.MeshBuilder.CreateBox('point', {
 				width: 10,
 				height: 1,
-				depth: 10
+				depth: 15
 			}, scene);
 			point.material = new BABYLON.StandardMaterial("pointMaterial", scene);
 			point.material.diffuseColor = new BABYLON.Color3(1, 3, 1);
@@ -102,12 +106,27 @@ var _yFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.2)+(
 			}
 		}
 			drawParametric(xFn, zFn, 0, 1, 350, scene);
-
+			function tLookup(xFn, zFn, res, x, z) {
+				var minT = 0;
+				var minDist = Infinity;
+				for (var t = 0; t <= 1; t += (1 / res)) {
+					var dist = Math.pow(x - xFn(t), 2) + Math.pow(z - zFn(t), 2);
+					if (dist < minDist) {
+						minDist = dist;
+						minT = t;
+					}
+				}
+				return minT;
+			}
 		engine.runRenderLoop(scene.render.bind(scene));
 		window.addEventListener('resize', engine.resize.bind(engine));
+		function win(){
+			window.location.reload();
+			alert("You WIN! Press Ctrl + R Twice to reset!");
+		}
 		function lost(){
 			window.location.reload();
-			alert("you lose!");
+			alert("you lose! Press Ctrl + R Twice to reset!");
 		}
 	}
 </script>
