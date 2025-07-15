@@ -22,6 +22,16 @@
 		scene.enablePhysics(gravityVector, new BABYLON.CannonJSPlugin());
 
 		scene.clearColor = new BABYLON.Color3(0, 0, 0);
+			//===TRACK CODE===//
+
+			var _xFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.025)+(3*t*Math.pow((1-t),2)*0.1)+(3*Math.pow(t,2)*(1-t)*0.1625)+(Math.pow(t,3)*0.3125)},function(t) {return (Math.pow((1-t),3)*0.3125)+(3*t*Math.pow((1-t),2)*0.4625)+(3*Math.pow(t,2)*(1-t)*0.71)+(Math.pow(t,3)*0.785)},function(t) {return (Math.pow((1-t),3)*0.785)+(3*t*Math.pow((1-t),2)*0.86)+(3*Math.pow(t,2)*(1-t)*0.435)+(Math.pow(t,3)*0.6675)},function(t) {return (Math.pow((1-t),3)*0.6675)+(3*t*Math.pow((1-t),2)*0.9)+(3*Math.pow(t,2)*(1-t)*0.975)+(Math.pow(t,3)*0.9)},function(t) {return (Math.pow((1-t),3)*0.9)+(3*t*Math.pow((1-t),2)*0.825)+(3*Math.pow(t,2)*(1-t)*0.82)+(Math.pow(t,3)*0.735)},function(t) {return (Math.pow((1-t),3)*0.735)+(3*t*Math.pow((1-t),2)*0.65)+(3*Math.pow(t,2)*(1-t)*0.31)+(Math.pow(t,3)*0.31)},function(t) {return (Math.pow((1-t),3)*0.31)+(3*t*Math.pow((1-t),2)*0.31)+(3*Math.pow(t,2)*(1-t)*0.1775)+(Math.pow(t,3)*0.0675)},function(t) {return (Math.pow((1-t),3)*0.0675)+(3*t*Math.pow((1-t),2)*-0.0425)+(3*Math.pow(t,2)*(1-t)*0.035)+(Math.pow(t,3)*0.0325)}];var i = Math.max(0,Math.min(7, Math.floor(t * 8)));return fns[i]((t - (i/8)) * 8);};
+var _yFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.2)+(3*t*Math.pow((1-t),2)*0.025)+(3*Math.pow(t,2)*(1-t)*0.025)+(Math.pow(t,3)*0.4403125)},function(t) {return (Math.pow((1-t),3)*0.4403125)+(3*t*Math.pow((1-t),2)*0.855625)+(3*Math.pow(t,2)*(1-t)*0.4803125)+(Math.pow(t,3)*0.6553125)},function(t) {return (Math.pow((1-t),3)*0.6553125)+(3*t*Math.pow((1-t),2)*0.8303125)+(3*Math.pow(t,2)*(1-t)*0.9028125)+(Math.pow(t,3)*0.9728125)},function(t) {return (Math.pow((1-t),3)*0.9728125)+(3*t*Math.pow((1-t),2)*1.0428125)+(3*Math.pow(t,2)*(1-t)*0.8328125)+(Math.pow(t,3)*0.3978125)},function(t) {return (Math.pow((1-t),3)*0.3978125)+(3*t*Math.pow((1-t),2)*-0.0371875)+(3*Math.pow(t,2)*(1-t)*0.3778125)+(Math.pow(t,3)*0.1928125)},function(t) {return (Math.pow((1-t),3)*0.1928125)+(3*t*Math.pow((1-t),2)*0.0078125)+(3*Math.pow(t,2)*(1-t)*0.1328125)+(Math.pow(t,3)*0.1328125)},function(t) {return (Math.pow((1-t),3)*0.1328125)+(3*t*Math.pow((1-t),2)*0.1328125)+(3*Math.pow(t,2)*(1-t)*0.0553125)+(Math.pow(t,3)*0.0578125)},function(t) {return (Math.pow((1-t),3)*0.0578125)+(3*t*Math.pow((1-t),2)*0.0603125)+(3*Math.pow(t,2)*(1-t)*0.1303125)+(Math.pow(t,3)*0.2028125)}];var i = Math.max(0,Math.min(7, Math.floor(t * 8)));return fns[i]((t - (i/8)) * 8);};
+
+
+			//===END TRACK CODE===//
+
+		var xFn = function(t) { return 650 * _xFn(t); }
+		var zFn = function(t) { return 650 * _yFn(t); }
 
 
 		var playerSphere = BABYLON.MeshBuilder.CreateSphere("playerSphere", {
@@ -30,7 +40,8 @@
 		}, scene);
 		playerSphere.material = new BABYLON.StandardMaterial("playerSphereMaterial", scene);
 		playerSphere.material.diffuseTexture = new BABYLON.Texture('resources/BeachBallColor.jpg', scene);
-		playerSphere.position = new BABYLON.Vector3(0, 5, 0);
+		playerSphere.position = new BABYLON.Vector3(xFn(0), 9, zFn(0));
+
 		playerSphere.physicsImpostor = new BABYLON.PhysicsImpostor(playerSphere, BABYLON.PhysicsImpostor.SphereImpostor, {
 			mass: 1,
 			restitution: 0.9
@@ -72,26 +83,31 @@
 		});
 		function drawPoint(x, z, zrot, scene) {
 			var point = BABYLON.MeshBuilder.CreateBox('point', {
-				width: 300,
+				width: 10,
 				height: 1,
-				depth: 300
+				depth: 10
 			}, scene);
 			point.material = new BABYLON.StandardMaterial("pointMaterial", scene);
 			point.material.diffuseColor = new BABYLON.Color3(1, 3, 1);
-			point.position = new BABYLON.Vector3(145, -8, z);
+			point.position = new BABYLON.Vector3(x, -8, z);
 			point.rotation.y = zrot;
 			point.physicsImpostor = new BABYLON.PhysicsImpostor(point, BABYLON.PhysicsImpostor.BoxImpostor, {
 				mass: 0,
 				restitution: 0.9
 			}, scene);
 		}
+		function drawParametric(xFn, zFn, start, end, res, scene) {
+			for (var t = start; t <= end; t += ((end - start) / res)) {
+				drawPoint(xFn(t), zFn(t), 0, scene);
+			}
+		}
+			drawParametric(xFn, zFn, 0, 1, 350, scene);
 
-			drawPoint(0, 0, 0, scene);
 		engine.runRenderLoop(scene.render.bind(scene));
 		window.addEventListener('resize', engine.resize.bind(engine));
 		function lost(){
 			window.location.reload();
-			alert("you lose! Press Ctrl + R to reset!");
+			alert("you lose!");
 		}
 	}
 </script>
