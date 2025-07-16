@@ -6,15 +6,28 @@
    <link rel="preconnect" href="https://fonts.googleapis.com">
    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+   <!-- Default favicon link -->
+   <link id="favicon" rel="icon" href="favicon-white.png" type="image/x-icon">
+   <script>
+  function updateFavicon(darkMode) {
+    const favicon = document.getElementById('favicon');
+    if (darkMode) {
+      favicon.href = 'favicon-black.ico';
+    } else {
+      favicon.href = 'favicon-white.ico';
+    }
+  }
 
-   <!-- Default favicon (for browsers that don't support media queries in link tags) -->
-  <link rel="icon" href="favicon-white.png" type="image/x-icon">
-  
-  <!-- Light mode favicon -->
-  <link rel="icon" href="favicon-black.png" type="image/x-icon" media="(prefers-color-scheme: light)">
-  
-  <!-- Dark mode favicon -->
-  <link rel="icon" href="favicon-white.png" type="image/x-icon" media="(prefers-color-scheme: dark)">
+  // Check for initial preference
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+  updateFavicon(prefersDark.matches);
+
+  // Listen for changes
+  prefersDark.addEventListener('change', (e) => {
+    updateFavicon(e.matches);
+  });
+</script>
+
 </head>
 <body>
    <div class="header">
