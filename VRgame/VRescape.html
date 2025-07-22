@@ -78,6 +78,70 @@ this.el.removeEventListener('activate', this.activate);
 this.el.removeEventListener('deactivate', this.deactivate);
 }
 });
+AFRAME.registerComponent('inv-slot', {
+init: function () {
+var el = this.el;
+this.click = this.click.bind(this);
+this.el.addEventListener('click', this.click);
+},
+click: function(e){
+if(e.target !== this.el) { return; }
+var activeItem = document.querySelector('#active-item');
+var slotItem = this.el.children[0];
+if(activeItem) {
+if(this.el.children.length === 0) {
+setSlotItem(this.el, activeItem)
+} else {
+var slotItem = this.el.children[0];
+setSlotItem(this.el, activeItem);
+setActiveItem(slotItem);
+}
+} else if(slotItem) {
+setActiveItem(slotItem);
+}
+},
+remove: function() {
+this.el.removeEventListener('click', this.click);
+}
+});
+AFRAME.registerComponent('follow-feet', {
+schema: {
+x: {type: 'number', default: 0},
+z: {type: 'number', default: 0}
+},
+init: function () {
+this.camera = document.querySelector('a-camera');
+this.componentChanged = this.componentChanged.bind(this);
+this.camera.addEventListener('componentchanged', this.componentChanged);
+this.componentChanged();
+},
+componentChanged: function(evt){
+if(evt && evt.detail.name !== 'position') { return; }
+var position = this.camera.getAttribute('position');
+if(position) {
+this.el.setAttribute('position', (position.x + this.data.x) + ' ' + (position.y - 1) + ' ' + (position.z + this.data.z));
+}
+},
+remove: function() {
+this.camera.removeEventListener('componentchanged', this.componentChanged);
+}
+});
+AFRAME.registerComponent('teleporter', {
+init: function () {
+this.click = this.click.bind(this);
+this.el.addEventListener('click', this.click);
+},
+click: function() {
+var camera = document.querySelector('a-camera');
+var cameraPosition = camera.getAttribute('position');
+var position = this.el.getAttribute('position');
+position.y = cameraPosition.y;
+camera.setAttribute('position', position);
+},
+remove: function() {
+this.el.removeEventListener('click', this.click);
+}
+});
 function setActiveItem(item) {
 item.setAttribute('id', 'active-item');
 var camera = document.querySelector('a-camera');
@@ -86,6 +150,20 @@ item.setAttribute('position', '-0.25 0 -0.5');
 item.setAttribute('rotation', '-90 0 0');
 item.setAttribute('scale', '0.1 0.1 0.1');
 item.dispatchEvent(new Event('activate-item'));
+}
+function getEmptySlot() {
+var invSlots = ['inv-slot-1', 'inv-slot-2', 'inv-slot-3', 'inv-slot-4'];
+for(var i = 0; i < invSlots.length; i++) {
+var slot = document.querySelector('#'+invSlots[i]);
+if(slot && slot.children.length === 0) { return slot; }
+}
+}
+function setSlotItem(slot, item) {
+item.dispatchEvent(new Event('deactivate-item'));
+item.removeAttribute('id');
+slot.appendChild(item);
+item.setAttribute('position', '-0.01 0.05 0.01');
+item.setAttribute('scale', '0.03 0.03 0.03');
 }
 </script>
 </head>
@@ -123,6 +201,27 @@ item.dispatchEvent(new Event('activate-item'));
 		<a-box position="0 9 -6" rotation="-270 0 0" depth=".05" width="8" height="16" shadow></a-box>
 
 		<a-plane position="0 1.5 -6" src="#carpet" repeat="90 90" rotation="-90 0 0" width="8" height="16" color="#7BC8A4" shadow></a-plane>
+
+		<!-- Inventory Slots-->
+		<a-plane id="inv-slot-1" rotation="-90 0 0" width="0.2" height="0.2" color="#eee" follow-feet="x: 0.2;" inv-slot shadow></a-plane>
+		<a-plane id="inv-slot-2" rotation="-90 0 0" width="0.2" height="0.2" color="#eee" follow-feet="x: -0.2;" inv-slot shadow></a-plane>
+		<a-plane id="inv-slot-3" rotation="-90 0 0" width="0.2" height="0.2" color="#eee" follow-feet="z: 0.2;" inv-slot shadow></a-plane>
+		<a-plane id="inv-slot-4" rotation="-90 0 0" width="0.2" height="0.2" color="#eee" follow-feet="z: -0.2;" inv-slot shadow></a-plane>
+
+		<!-- Teleporters -->
+		<a-sphere position="0 4 0" radius="0.15" color="purple" teleporter fusable shadow></a-sphere>
+		<a-sphere position="-3 4 -7" radius="0.15" color="purple" teleporter fusable shadow></a-sphere>
+
+		<!-- 3 Piece Door Wall -->
+		<a-box position="2 5.5 -5.8" rotation="0 180 0" depth=".05" width="8.3" height="8" color="beige" shadow></a-box>
+		<a-box position="-2.7 7.2 -5.8" rotation="0 180 0" depth=".05" width="1.2" height="4.8" color="beige" shadow></a-box>
+		<a-box position="-4 5.5 -5.8" rotation="0 180 0" depth=".05" width="1.5" height="8" color="beige" shadow></a-box>
+
+		<!-- Far wall Blacked Out-->
+		<a-box position="0 5.5 -14" rotation="0 0 0" depth=".05" width="8" height="8" color="brown" shadow></a-box>
+
+		<!-- TEXT -->
+		<a-text position="-2.5 5.5 -13.9" color="black" scale="6 6 6" value="You Win!"></a-text>
 
 		<!-- GLTF Images -->
 		<a-gltf-model scale="1.7 1.7 1.7" position="0.2 1.5 -5.6" rotation="0 0 0" src="#wall" shadow></a-gltf-model>
