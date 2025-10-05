@@ -55,7 +55,7 @@ function printToTerminal(text, isPin=false) {
 }
 
 // Connect to Render backend using EventSource
-const evtSource = new EventSource("https://your-render-app.onrender.com/scan");
+const evtSource = new EventSource("https://raskattack-github-io.onrender.com/scan"); // REPLACE with your Render URL
 
 evtSource.onmessage = function(event) {
     if (stopScanner) return;
