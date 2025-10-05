@@ -1,73 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Kahoot Scanner</title>
-<style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    h1 { color: #2c3e50; }
-    #found { margin-top: 20px; }
-    .code { display: inline-block; margin: 2px 4px; font-weight: bold; opacity: 1; transition: opacity 5s linear; }
-    .new { color: green; }
-</style>
+  <meta charset="UTF-8">
+  <title>Kahoot Scanner Console</title>
+  <style>
+    body {
+      background: black;
+      color: lime;
+      font-family: monospace;
+      margin: 0;
+      padding: 0;
+    }
+    #console {
+      padding: 10px;
+      height: 100vh;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+  </style>
 </head>
 <body>
-<h1>Kahoot Scanner</h1>
-<p>Codes checked: <span id="checked">0</span></p>
-<p>Codes found: <span id="found-count">0</span></p>
+  <div id="console"></div>
 
-<div id="found"></div>
+  <script>
+    const consoleEl = document.getElementById("console");
 
-<h3>Skipped counts:</h3>
-<ul>
-    <li>Old games: <span id="old">0</span></li>
-    <li>No session: <span id="no_session">0</span></li>
-    <li>Locked: <span id="locked">0</span></li>
-    <li>Other: <span id="other">0</span></li>
-</ul>
+    function appendLine(text) {
+      consoleEl.textContent += text + "\n";
+      consoleEl.scrollTop = consoleEl.scrollHeight; // auto-scroll
+    }
 
-<script>
-const foundDiv = document.getElementById('found');
-let allCodes = new Set();
+    async function pollStatus() {
+      try {
+        const res = await fetch("/status");
+        const data = await res.json();
 
-async function updateStatus() {
-    const res = await fetch('/status');
-    const data = await res.json();
+        // Print any new codes
+        data.new_codes.forEach(code => {
+          appendLine("🎯 GAME PIN: " + code);
+        });
 
-    document.getElementById('checked').textContent = data.codes_checked;
-    document.getElementById('found-count').textContent = data.codes_found.length;
-
-    // Add new codes
-    data.new_codes.forEach(code => {
-        if (!allCodes.has(code)) {
-            const span = document.createElement('span');
-            span.textContent = code;
-            span.classList.add('code', 'new');
-            foundDiv.appendChild(span);
-            allCodes.add(code);
-
-            // Fade out after 10 seconds
-            setTimeout(() => {
-                span.style.opacity = 0;
-            }, 10000);
-
-            // Remove from DOM after fade
-            setTimeout(() => {
-                span.remove();
-                allCodes.delete(code);
-            }, 15000);
+        // Print counters every 50 codes checked
+        if (data.codes_checked % 50 === 0) {
+          appendLine(`Checked ${data.codes_checked} codes | Active: ${data.codes_found.length} | Skipped old: ${data.codes_skipped.old} | No session: ${data.codes_skipped.no_session} | Locked: ${data.codes_skipped.locked} | Other: ${data.codes_skipped.other}`);
         }
-    });
 
-    document.getElementById('old').textContent = data.codes_skipped.old;
-    document.getElementById('no_session').textContent = data.codes_skipped.no_session;
-    document.getElementById('locked').textContent = data.codes_skipped.locked;
-    document.getElementById('other').textContent = data.codes_skipped.other;
-}
+      } catch (err) {
+        appendLine("Error fetching status: " + err);
+      }
+    }
 
-// Update every second
-setInterval(updateStatus, 1000);
-updateStatus();
-</script>
+    // Poll every 0.5 seconds
+    setInterval(pollStatus, 500);
+  </script>
 </body>
 </html>
