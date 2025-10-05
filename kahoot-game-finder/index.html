@@ -2,56 +2,70 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Kahoot Scanner Console</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kahoot Console</title>
   <style>
     body {
-      background: black;
-      color: lime;
+      background: #1e1e1e;
+      color: #d4d4d4;
       font-family: monospace;
-      margin: 0;
-      padding: 0;
+      padding: 20px;
     }
     #console {
-      padding: 10px;
-      height: 100vh;
-      overflow-y: auto;
       white-space: pre-wrap;
+      overflow-y: auto;
+      max-height: 90vh;
+      border: 1px solid #333;
+      padding: 10px;
+      background: #121212;
+    }
+    .active {
+      color: #00ff00;
+    }
+    .skipped {
+      color: #ff5555;
     }
   </style>
 </head>
 <body>
+  <h1>Kahoot Code Scanner Console</h1>
   <div id="console"></div>
 
   <script>
     const consoleEl = document.getElementById("console");
+    const RENDER_URL = "https://<YOUR-RENDER-URL>/run"; // Replace with your Render URL
 
-    function appendLine(text) {
-      consoleEl.textContent += text + "\n";
-      consoleEl.scrollTop = consoleEl.scrollHeight; // auto-scroll
+    let codesChecked = 0;
+    let codesFound = 0;
+    let codesSkipped = { old: 0, no_session: 0, locked: 0, other: 0 };
+
+    function logLine(text, type = "") {
+      const line = document.createElement("div");
+      if (type) line.classList.add(type);
+      line.textContent = text;
+      consoleEl.appendChild(line);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
     }
 
-    async function pollStatus() {
+    async function fetchCode() {
       try {
-        const res = await fetch("/status");
+        const res = await fetch(RENDER_URL);
         const data = await res.json();
 
-        // Print any new codes
-        data.new_codes.forEach(code => {
-          appendLine("🎯 GAME PIN: " + code);
-        });
+        codesChecked++;
 
-        // Print counters every 50 codes checked
-        if (data.codes_checked % 50 === 0) {
-          appendLine(`Checked ${data.codes_checked} codes | Active: ${data.codes_found.length} | Skipped old: ${data.codes_skipped.old} | No session: ${data.codes_skipped.no_session} | Locked: ${data.codes_skipped.locked} | Other: ${data.codes_skipped.other}`);
+        if (data.active) {
+          codesFound++;
+          logLine(`🎯 GAME PIN: ${data.code}`, "active");
+          if (data.data) {
+            const startTime = data.data.startTime || 0;
+            const ageMinutes = Math.floor((Date.now() - startTime) / 60000);
+            logLine(`  Type: ${data.data.gameType || "unknown"} | Age: ${ageMinutes}m`, "active");
+          }
+        } else {
+          codesSkipped.other++;
+          logLine(`Skipped code ${data.code}`, "skipped");
         }
 
-      } catch (err) {
-        appendLine("Error fetching status: " + err);
-      }
-    }
-
-    // Poll every 0.5 seconds
-    setInterval(pollStatus, 500);
-  </script>
-</body>
-</html>
+        if (codesChecked % 10 === 0) {
+          logLine(`Checked ${codesChecked} codes | Active: ${codesFound
