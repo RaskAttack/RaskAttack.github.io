@@ -1,4 +1,7 @@
 from flask import Flask, Response
+from flask import Flask, Response, stream_with_context
+from flask_cors import CORS
+CORS(app)
 import requests
 import random
 import time
@@ -78,7 +81,7 @@ def stream_scanner():
 
 @app.route("/scan")
 def scan():
-    return Response(stream_scanner(), mimetype="text/event-stream")
+    return Response(stream_with_context(stream_scanner()), mimetype="text/event-stream")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
