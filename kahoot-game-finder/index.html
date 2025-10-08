@@ -1,75 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kahoot Terminal</title>
-<style>
-body {
-    background: #0f0f0f;
-    color: #00ff00;
-    font-family: monospace;
-    padding: 20px;
-    margin: 0;
-}
-#terminal {
-    white-space: pre-wrap;
-    font-size: 16px;
-    line-height: 1.3;
-    height: 90vh;
-    overflow-y: auto;
-}
-.pin {
-    font-size: 2.5em;
-    font-weight: bold;
-    color: #ff0;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kahoot Terminal</title>
+    <style>
+        body {
+            background: #0f0f0f;
+            color: #00ff00;
+            font-family: monospace;
+            padding: 20px;
+            margin: 0;
+        }
+        #terminal {
+            white-space: pre-wrap;
+            font-size: 16px;
+            line-height: 1.3;
+            height: 90vh;
+            overflow-y: auto;
+        }
+        .pin {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #ff0;
+        }
+        #floodDialog {
+            display: none;
+            background: #111;
+            padding: 20px;
+            border: 2px solid #0f0f0f;
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%,0);
+            z-index: 10000;
+            color: #0f0;
+        }
+    </style>
 </head>
 <body>
 <h1>Kahoot Code Scanner Terminal</h1>
 <div id="terminal">Connecting to scanner...\nPress Ctrl+C to stop.\n\n</div>
+<div id="floodDialog">
+    <h2>Flood Options</h2>
+    <label>Name: <input id="botName" value="BotMaster" style="width:120px"></label><br>
+    <label>Amount: <input id="botAmount" type="number" min="1" max="500" value="50" style="width:60px"></label><br>
+    <label><input id="randomNames" type="checkbox"> Random Names</label><br>
+    <button onclick="runFlood()">Start Flood</button>
+    <button onclick="closeDialog()">Cancel</button>
+</div>
 
 <script>
-const terminal = document.getElementById("terminal");
-let stopScanner = false;
+    const terminal = document.getElementById("terminal");
+    let stopScanner = false;
+    let latestPin = "";
+    let floodDialog = document.getElementById("floodDialog");
+    let floodDialogOpen = false;
 
-// Ctrl+C stops the scanner
-document.addEventListener("keydown", (e) => {
-    if (e.ctrlKey && e.key.toLowerCase() === "c") {
-        stopScanner = true;
-        terminal.innerHTML += "\nStopped by user.";
-        if (evtSource) evtSource.close();
+    document.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.key.toLowerCase() === "c") {
+            stopScanner = true;
+            terminal.innerHTML += "\nStopped by user.";
+            if (evtSource) evtSource.close();
+        }
+        // Open flood dialog on "y" key
+        if (e.key === "y" && !floodDialogOpen) {
+            if (latestPin) {
+                showDialog();
+            } else {
+                alert("No active code to flood yet!");
+            }
+        }
+    });
+
+    function printToTerminal(text, isPin=false) {
+        if (isPin) {
+            latestPin = text;
+            terminal.innerHTML += "\n==============================\n";
+            terminal.innerHTML += `<span class="pin">🎯 ${text}</span>\n`;
+            terminal.innerHTML += "==============================\n";
+        } else {
+            terminal.innerHTML += text + "\n";
+        }
+        terminal.scrollTop = terminal.scrollHeight;
     }
-});
-
-function printToTerminal(text, isPin=false) {
-    if (isPin) {
-        terminal.innerHTML += "\n==============================\n";
-        terminal.innerHTML += `<span class="pin">🎯 ${text}</span>\n`;
-        terminal.innerHTML += "==============================\n";
-    } else {
-        terminal.innerHTML += text + "\n";
+    function showDialog() {
+        floodDialog.style.display = "";
+        floodDialogOpen = true;
+        document.getElementById("botName").focus();
     }
-    terminal.scrollTop = terminal.scrollHeight;
-}
-
-// Connect to Render backend using EventSource
-const evtSource = new EventSource("https://raskattack-github-io.onrender.com/scan"); // REPLACE with your Render URL
-
-evtSource.onmessage = function(event) {
-    if (stopScanner) return;
-    const msg = event.data;
-    if (msg.startsWith("ACTIVE")) {
-        printToTerminal(msg.split(" ")[1], true);
-    } else {
-        printToTerminal(msg);
+    function closeDialog() {
+        floodDialog.style.display = "none";
+        floodDialogOpen = false;
     }
-};
+    function runFlood() {
+        const name = document.getElementById("botName").value;
+        const amount = parseInt(document.getElementById("botAmount").value, 10) || 1;
+        const randomNames = document.getElementById("randomNames").checked;
+        closeDialog();
+        printToTerminal(`Flooding ${latestPin} with ${amount} bots...`);
+        fetch("/flood", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                pin: latestPin,
+                name: name,
+                amount: amount,
+                randomNames: randomNames
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            printToTerminal("Flood Result: " + JSON.stringify(data));
+        });
+    }
 
-evtSource.onerror = function() {
-    printToTerminal("Connection lost. Refresh page to reconnect.");
-};
+    // Use relative URL for backend in same domain. If deployed cross-origin, change URL accordingly below.
+    const evtSource = new EventSource("/scan");
+
+    evtSource.onmessage = function(event) {
+        if (stopScanner) return;
+        const msg = event.data;
+        if (msg.startsWith("ACTIVE")) {
+            printToTerminal(msg.split(" ")[1], true);
+        } else {
+            printToTerminal(msg);
+        }
+    };
+
+    evtSource.onerror = function() {
+        printToTerminal("Connection lost. Refresh page to reconnect.");
+    };
 </script>
 </body>
 </html>
