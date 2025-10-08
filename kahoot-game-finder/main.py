@@ -16,7 +16,7 @@ def is_game_active(code):
             return False, None
         data = response.json()
 
-        # Check live game
+        # Check if there’s a live game
         if not data.get("liveGameId"):
             return False, "No live game session"
 
@@ -41,10 +41,12 @@ def is_game_active(code):
         return False, "Invalid response"
 
 def generate_code():
-    return ''.join(random.choices(digits, k=6))
+    # ✅ Random length between 5 and 10 digits
+    length = random.randint(5, 10)
+    return ''.join(random.choices(digits, k=length))
 
 def stream_scanner():
-    codes_checked = 900000  # Start from 900000
+    codes_checked = 0
     codes_found = 0
     codes_skipped = {"old":0, "no_session":0, "locked":0, "other":0}
 
@@ -70,7 +72,7 @@ def stream_scanner():
         # Stats every 100 codes
         if codes_checked % 100 == 0:
             total_skipped = sum(codes_skipped.values())
-            stats = f"Checked {codes_checked} codes | Active: {codes_found} | Skipped old/ended: {total_skipped}"
+            stats = f"Checked {codes_checked} codes | Active: {codes_found} | Skipped: {total_skipped}"
             yield f"data: {stats}\n\n"
 
         time.sleep(0.1)
