@@ -24,58 +24,27 @@
             font-weight: bold;
             color: #ff0;
         }
-        #floodDialog {
-            display: none;
-            background: #111;
-            padding: 20px;
-            border: 2px solid #0f0f0f;
-            position: fixed;
-            top: 20%;
-            left: 50%;
-            transform: translate(-50%,0);
-            z-index: 10000;
-            color: #0f0;
-        }
     </style>
 </head>
 <body>
 <h1>Kahoot Code Scanner Terminal</h1>
 <div id="terminal">Connecting to scanner...\nPress Ctrl+C to stop.\n\n</div>
-<div id="floodDialog">
-    <h2>Flood Options</h2>
-    <label>Name: <input id="botName" value="BotMaster" style="width:120px"></label><br>
-    <label>Amount: <input id="botAmount" type="number" min="1" max="500" value="50" style="width:60px"></label><br>
-    <label><input id="randomNames" type="checkbox"> Random Names</label><br>
-    <button onclick="runFlood()">Start Flood</button>
-    <button onclick="closeDialog()">Cancel</button>
-</div>
 
 <script>
     const terminal = document.getElementById("terminal");
     let stopScanner = false;
-    let latestPin = "";
-    let floodDialog = document.getElementById("floodDialog");
-    let floodDialogOpen = false;
 
+    // Ctrl+C stops the scanner
     document.addEventListener("keydown", (e) => {
         if (e.ctrlKey && e.key.toLowerCase() === "c") {
             stopScanner = true;
             terminal.innerHTML += "\nStopped by user.";
             if (evtSource) evtSource.close();
         }
-        // Open flood dialog on "y" key
-        if (e.key === "y" && !floodDialogOpen) {
-            if (latestPin) {
-                showDialog();
-            } else {
-                alert("No active code to flood yet!");
-            }
-        }
     });
 
     function printToTerminal(text, isPin=false) {
         if (isPin) {
-            latestPin = text;
             terminal.innerHTML += "\n==============================\n";
             terminal.innerHTML += `<span class="pin">🎯 ${text}</span>\n`;
             terminal.innerHTML += "==============================\n";
@@ -84,39 +53,9 @@
         }
         terminal.scrollTop = terminal.scrollHeight;
     }
-    function showDialog() {
-        floodDialog.style.display = "";
-        floodDialogOpen = true;
-        document.getElementById("botName").focus();
-    }
-    function closeDialog() {
-        floodDialog.style.display = "none";
-        floodDialogOpen = false;
-    }
-    function runFlood() {
-        const name = document.getElementById("botName").value;
-        const amount = parseInt(document.getElementById("botAmount").value, 10) || 1;
-        const randomNames = document.getElementById("randomNames").checked;
-        closeDialog();
-        printToTerminal(`Flooding ${latestPin} with ${amount} bots...`);
-        fetch("/flood", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                pin: latestPin,
-                name: name,
-                amount: amount,
-                randomNames: randomNames
-            })
-        })
-        .then(r => r.json())
-        .then(data => {
-            printToTerminal("Flood Result: " + JSON.stringify(data));
-        });
-    }
 
-    // Use relative URL for backend in same domain. If deployed cross-origin, change URL accordingly below.
-    const evtSource = new EventSource("/scan");
+    // Connect to Render backend using EventSource
+    const evtSource = new EventSource("https://raskattack-github-io.onrender.com/scan"); // REPLACE with your Render URL
 
     evtSource.onmessage = function(event) {
         if (stopScanner) return;
