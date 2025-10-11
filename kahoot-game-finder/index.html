@@ -5,46 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kahoot Terminal</title>
     <style>
-        body {
-            background: #0f0f0f;
-            color: #00ff00;
-            font-family: monospace;
-            padding: 20px;
-            margin: 0;
-        }
-        #terminal {
-            white-space: pre-wrap;
-            font-size: 16px;
-            line-height: 1.3;
-            height: 90vh;
-            overflow-y: auto;
-        }
-        .pin {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #ff0;
-        }
+        body { background: #0f0f0f; color: #00ff00; font-family: monospace; padding: 20px; margin: 0; }
+        #terminal { white-space: pre-wrap; font-size: 16px; line-height: 1.3; height: 90vh; overflow-y: auto; }
+        .pin { font-size: 2.5em; font-weight: bold; color: #ff0; }
+        .dialog { display: none; background: #111; padding: 20px; border: 2px solid #0f0f0f; position: fixed; top: 24vh; left: 50%; transform: translate(-50%,0); z-index: 10000; color: #0f0; }
+        .dialog label { display: block; margin-bottom: 7px; }
     </style>
 </head>
 <body>
 <h1>Kahoot Code Scanner Terminal</h1>
 <div id="terminal">Connecting to scanner...\nPress Ctrl+C to stop.\n\n</div>
 
+<!-- Flood Bot Dialog -->
+<div id="floodDialog" class="dialog">
+    <h2>Flood Options</h2>
+    <label>Name: <input id="botName" value="BotMaster" style="width:120px"></label>
+    <label>Amount: <input id="botAmount" type="number" min="1" max="500" value="50" style="width:60px"></label>
+    <label><input id="randomNames" type="checkbox"> Random Names</label>
+    <button onclick="runFlood()">Start Flood</button>
+    <button onclick="closeDialog('floodDialog')">Cancel</button>
+</div>
+
+<!-- Manual PIN Check Dialog -->
+<div id="checkDialog" class="dialog">
+    <h2>Check Specific PIN</h2>
+    <label>PIN: <input id="manualPin" type="text" style="width:120px"></label>
+    <button onclick="runCheckPin()">Check</button>
+    <button onclick="closeDialog('checkDialog')">Cancel</button>
+</div>
+
 <script>
     const terminal = document.getElementById("terminal");
-    let stopScanner = false;
 
-    // Ctrl+C stops the scanner
-    document.addEventListener("keydown", (e) => {
-        if (e.ctrlKey && e.key.toLowerCase() === "c") {
-            stopScanner = true;
-            terminal.innerHTML += "\nStopped by user.";
-            if (evtSource) evtSource.close();
-        }
-    });
+    let stopScanner = false;
+    let latestPin = "";
+    let floodDialogOpen = false;
+    let checkDialogOpen = false;
+
+    // ---- CONFIG: PUT YOUR RENDER BASE URL HERE ----
+    const RENDER_URL = "https://YOUR-RENDER-APP.onrender.com"; // <- CHANGE THIS LINE!
 
     function printToTerminal(text, isPin=false) {
         if (isPin) {
+            latestPin = text;
             terminal.innerHTML += "\n==============================\n";
             terminal.innerHTML += `<span class="pin">🎯 ${text}</span>\n`;
             terminal.innerHTML += "==============================\n";
@@ -54,8 +57,85 @@
         terminal.scrollTop = terminal.scrollHeight;
     }
 
-    // Connect to Render backend using EventSource
-    const evtSource = new EventSource("https://raskattack-github-io.onrender.com/scan"); // REPLACE with your Render URL
+    document.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.key.toLowerCase() === "c") {
+            stopScanner = true;
+            terminal.innerHTML += "\nStopped by user.";
+            if (evtSource) evtSource.close();
+        }
+        // Open flood dialog on "y" key
+        if (e.key === "y" && !floodDialogOpen && !checkDialogOpen) {
+            if (latestPin) showDialog('floodDialog');
+            else alert("No active code to flood yet!");
+        }
+        // Open PIN check dialog on "u" key
+        if (e.key === "u" && !checkDialogOpen && !floodDialogOpen) {
+            showDialog('checkDialog');
+        }
+    });
+
+    function showDialog(dialogId) {
+        document.getElementById(dialogId).style.display = "";
+        if (dialogId === 'floodDialog') floodDialogOpen = true;
+        if (dialogId === 'checkDialog') checkDialogOpen = true;
+        let firstInput = document.querySelector(`#${dialogId} input`);
+        if (firstInput) firstInput.focus();
+    }
+    function closeDialog(dialogId) {
+        document.getElementById(dialogId).style.display = "none";
+        if (dialogId === 'floodDialog') floodDialogOpen = false;
+        if (dialogId === 'checkDialog') checkDialogOpen = false;
+    }
+
+    function runFlood() {
+        const name = document.getElementById("botName").value;
+        const amount = parseInt(document.getElementById("botAmount").value, 10) || 1;
+        const randomNames = document.getElementById("randomNames").checked;
+        closeDialog('floodDialog');
+        printToTerminal(`Flooding ${latestPin} with ${amount} bots...`);
+        fetch(RENDER_URL + "/flood", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                pin: latestPin,
+                name: name,
+                amount: amount,
+                randomNames: randomNames
+            })
+        })
+            .then(r => r.json())
+            .then(data => {
+                printToTerminal("Flood Result: " + JSON.stringify(data));
+            })
+            .catch(() => {
+                printToTerminal("Flood request failed.");
+            });
+    }
+
+    function runCheckPin() {
+        const pin = document.getElementById("manualPin").value.trim();
+        closeDialog('checkDialog');
+        if (!pin) {
+            printToTerminal("No code entered.");
+            return;
+        }
+        printToTerminal(`Checking code ${pin}...`);
+        fetch(RENDER_URL + "/check_pin?code=" + encodeURIComponent(pin))
+            .then(r => r.json())
+            .then(data => {
+                if (data.active) {
+                    printToTerminal("[MANUAL CHECK] " + data.message, true);
+                } else {
+                    printToTerminal("[MANUAL CHECK] " + data.message);
+                }
+            })
+            .catch(() => {
+                printToTerminal("Check request failed.");
+            });
+    }
+
+    // Use /scan endpoint from backend for live scanner
+    const evtSource = new EventSource(RENDER_URL + "/scan");
 
     evtSource.onmessage = function(event) {
         if (stopScanner) return;
