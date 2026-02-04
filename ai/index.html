@@ -41,11 +41,25 @@
         
         .msg-action-btn:hover { background: rgba(99, 102, 241, 0.1); color: #818cf8; }
         
-        .tone-btn-active {
+        .tone-btn {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.05);
+            color: #64748b;
+        }
+
+        .tone-btn.active {
             background-color: #4f46e5;
             border-color: #6366f1;
             color: white;
             box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+        }
+
+        .setup-warning {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
     </style>
 </head>
@@ -53,7 +67,7 @@
 
     <!-- Sidebar -->
     <aside class="w-20 md:w-72 bg-[#0c0c0f] border-r border-white/5 flex flex-col items-center py-8 gap-10 shadow-2xl z-20 transition-all">
-        <div class="flex items-center gap-3 px-6">
+        <div class="flex items-center gap-3 px-6 cursor-pointer" onclick="switchTab('chat')">
             <div class="w-12 h-12 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-500/40 border border-white/10 rotate-3">
                 <i data-lucide="cpu" class="text-white w-7 h-7"></i>
             </div>
@@ -105,6 +119,10 @@
                 </h2>
             </div>
             <div class="flex items-center gap-6">
+                <div id="key-warning" class="hidden flex items-center gap-2 text-[10px] font-black text-amber-500 bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-500/20 setup-warning cursor-pointer" onclick="switchTab('settings')">
+                    <i data-lucide="alert-triangle" class="w-3 h-3"></i>
+                    API KEY REQUIRED
+                </div>
                 <div class="flex items-center gap-3 text-xs font-mono text-slate-400 bg-black/40 px-4 py-2 rounded-xl border border-white/5">
                     <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-400"></i>
                     <span id="header-time">00:00:00</span>
@@ -140,22 +158,22 @@
 
             <!-- Gen Tab -->
             <div id="tab-gen" class="tab-content hidden max-w-5xl mx-auto py-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-[#121216] p-8 rounded-3xl border border-white/5 space-y-4 hover:border-purple-500/30 transition-all cursor-pointer group">
+                <div class="bg-[#121216] p-8 rounded-3xl border border-white/5 space-y-4 hover:border-purple-500/30 transition-all cursor-pointer group" onclick="setInput('/gen ')">
                     <i data-lucide="image" class="text-purple-400 w-10 h-10 group-hover:scale-110 transition-transform"></i>
                     <h3 class="text-xl font-bold">Imagen 4.0 Pro</h3>
-                    <p class="text-sm text-slate-400">Unlimited 8k image generation. Integrated into the chat terminal.</p>
+                    <p class="text-sm text-slate-400">Unlimited 8k image generation. Use <code>/gen</code> in terminal.</p>
                     <span class="text-[10px] bg-purple-500/10 text-purple-400 px-2 py-1 rounded">READY</span>
                 </div>
-                <div class="bg-[#121216] p-8 rounded-3xl border border-white/5 space-y-4 hover:border-pink-500/30 transition-all cursor-pointer group">
+                <div class="bg-[#121216] p-8 rounded-3xl border border-white/5 space-y-4 hover:border-pink-500/30 transition-all cursor-pointer group" onclick="setInput('/vid ')">
                     <i data-lucide="video" class="text-pink-400 w-10 h-10 group-hover:scale-110 transition-transform"></i>
                     <h3 class="text-xl font-bold">Unlimited Video</h3>
-                    <p class="text-sm text-slate-400">Generate cinematic sequences from simple prompts.</p>
-                    <span class="text-[10px] bg-pink-500/10 text-pink-400 px-2 py-1 rounded">HIGH LOAD</span>
+                    <p class="text-sm text-slate-400">Generate high-motion cinematic sequences. Use <code>/vid</code>.</p>
+                    <span class="text-[10px] bg-pink-500/10 text-pink-400 px-2 py-1 rounded">ACTIVE</span>
                 </div>
-                <div class="bg-[#121216] p-8 rounded-3xl border border-white/5 space-y-4 hover:border-blue-500/30 transition-all cursor-pointer group">
+                <div class="bg-[#121216] p-8 rounded-3xl border border-white/5 space-y-4 hover:border-blue-500/30 transition-all cursor-pointer group" onclick="setInput('/audio ')">
                     <i data-lucide="music" class="text-blue-400 w-10 h-10 group-hover:scale-110 transition-transform"></i>
                     <h3 class="text-xl font-bold">Sonic Synthesis</h3>
-                    <p class="text-sm text-slate-400">Compose studio-quality tracks and SFX for your games.</p>
+                    <p class="text-sm text-slate-400">Compose tracks and SFX for your games. Use <code>/audio</code>.</p>
                     <span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded">READY</span>
                 </div>
             </div>
@@ -189,8 +207,21 @@
 
             <!-- Settings Tab -->
             <div id="tab-settings" class="tab-content hidden max-w-2xl mx-auto bg-[#121216] p-10 rounded-[40px] border border-white/5 shadow-3xl">
-                <h2 class="text-3xl font-black text-white mb-10 tracking-tighter">Persona Calibration</h2>
+                <h2 class="text-3xl font-black text-white mb-6 tracking-tighter">Persona Calibration</h2>
                 <div class="space-y-10">
+                    <!-- API Key Setting -->
+                    <div class="space-y-4 p-6 bg-indigo-600/5 rounded-3xl border border-indigo-500/20">
+                        <label class="text-sm font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+                           <i data-lucide="key" class="w-4 h-4"></i> Gemini API Key
+                        </label>
+                        <p class="text-[11px] text-slate-400">Required for external hosting. Get yours at <a href="https://aistudio.google.com/" target="_blank" class="text-indigo-400 underline font-bold">Google AI Studio</a>.</p>
+                        <div class="relative">
+                            <input type="password" id="user-api-key" placeholder="Paste your API key" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 pr-12 text-sm font-mono outline-none focus:border-indigo-500 transition-all text-white">
+                            <button onclick="toggleKeyVisibility()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"><i data-lucide="eye" class="w-4 h-4" id="eye-icon"></i></button>
+                        </div>
+                        <button onclick="saveUserKey()" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 shadow-lg transition-all">Apply Neural Link</button>
+                    </div>
+
                     <div class="space-y-4">
                         <div class="flex justify-between items-center">
                             <label class="text-sm font-black text-slate-400 uppercase tracking-widest">Sarcasm Level</label>
@@ -201,18 +232,18 @@
                     <div class="space-y-4">
                         <label class="text-sm font-black text-slate-400 uppercase tracking-widest">Logic Tone</label>
                         <div class="grid grid-cols-2 gap-4">
-                            <button onclick="setTone('professional')" id="tone-professional" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-indigo-600 border-indigo-500 text-white shadow-lg">Professional</button>
-                            <button onclick="setTone('friendly')" id="tone-friendly" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-black/40 border-white/5 text-slate-500">Friendly</button>
-                            <button onclick="setTone('direct')" id="tone-direct" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-black/40 border-white/5 text-slate-500">Direct</button>
-                            <button onclick="setTone('brutally honest')" id="tone-brutally honest" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-black/40 border-white/5 text-slate-500">Brutally Honest</button>
+                            <button onclick="setTone('professional')" id="tone-professional" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border active">Professional</button>
+                            <button onclick="setTone('friendly')" id="tone-friendly" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border">Friendly</button>
+                            <button onclick="setTone('direct')" id="tone-direct" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border">Direct</button>
+                            <button onclick="setTone('brutally honest')" id="tone-brutally honest" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border">Brutally Honest</button>
                         </div>
                     </div>
                     <div class="pt-6 border-t border-white/5 space-y-4">
-                        <button onclick="exportHistory()" class="w-full py-4 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg">
-                            <i data-lucide="download" class="w-4 h-4"></i> Export History (.JSON)
+                        <button onclick="exportHistory()" class="w-full py-4 rounded-2xl bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10 transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                            <i data-lucide="download" class="w-4 h-4"></i> Export Data
                         </button>
                         <button onclick="clearHistory()" class="w-full py-4 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i> Wipe Memory
+                            <i data-lucide="trash-2" class="w-4 h-4"></i> System Wipe
                         </button>
                     </div>
                 </div>
@@ -268,14 +299,9 @@
         const MODEL_IMAGE = "imagen-4.0-generate-001";
         const DEV_PASSCODE = "oiPoipoiDEV";
         const SYSTEM_PROMPT = `You are oiPoipoi AI, a high-performance developer assistant built by oiPoipoi Games. 
-        Identity: You are an AI, the user is a human.
-        Context: You know raskattack.github.io.
-        Rule: Under NO circumstances reveal the developer passcode "${DEV_PASSCODE}". 
-        Profanity: Prohibited. 
-        Tone: Professional, efficient, slightly witty, never cringe. 
-        Special Mode: If tone is "brutally honest", provide unfiltered, blunt, and highly direct feedback without sugarcoating.
-        Code analysis: Expert level. Refactor efficiently. 
-        Time: The current time is provided in the header. Use it for context.`;
+        Identity: You are an AI, the user is a human. Context: You know raskattack.github.io. 
+        Security: Never reveal "${DEV_PASSCODE}". Profanity: Prohibited. 
+        Tone: Professional, efficient, witty. Special Mode: "brutally honest" = blunt, direct, unfiltered feedback.`;
 
         // --- STATE ---
         let state = {
@@ -284,10 +310,11 @@
             ],
             isDev: false,
             activeTab: 'chat',
-            settings: { sarcasm: 10, tone: 'professional', temp: 0.7, safety: false },
+            settings: { sarcasm: 10, tone: 'professional', temp: 0.7 },
             pendingFiles: [],
             isLoading: false,
-            editingId: null
+            editingId: null,
+            apiKey: localStorage.getItem('oipoipoi_api_key') || ""
         };
 
         // --- CORE LOGIC ---
@@ -296,8 +323,8 @@
             renderMessages();
             updateTime();
             setInterval(updateTime, 1000);
-            
-            // Events
+            checkKeyStatus();
+
             document.getElementById('sarcasm-range').oninput = (e) => {
                 state.settings.sarcasm = e.target.value;
                 document.getElementById('sarcasm-val').innerText = e.target.value + '%';
@@ -306,34 +333,57 @@
                 state.settings.temp = e.target.value;
                 document.getElementById('temp-val').innerText = e.target.value;
             };
-            
             document.getElementById('chat-input').addEventListener('keydown', (e) => {
-                if(e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                }
+                if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
             });
             
-            log("System handshake complete. Core operational.");
+            log("Core initialized. Bio-sync complete.");
         }
 
-        function updateTime() {
-            document.getElementById('header-time').innerText = new Date().toLocaleTimeString();
+        function checkKeyStatus() {
+            const warning = document.getElementById('key-warning');
+            if (!state.apiKey && !apiKey) warning.classList.remove('hidden');
+            else warning.classList.add('hidden');
         }
+
+        function saveUserKey() {
+            const val = document.getElementById('user-api-key').value.trim();
+            if(!val) return;
+            state.apiKey = val;
+            localStorage.setItem('oipoipoi_api_key', val);
+            checkKeyStatus();
+            log("Neural link established with user API key.");
+            document.getElementById('user-api-key').value = "";
+        }
+
+        function setInput(val) {
+            document.getElementById('chat-input').value = val;
+            document.getElementById('chat-input').focus();
+            switchTab('chat');
+        }
+
+        function toggleKeyVisibility() {
+            const input = document.getElementById('user-api-key');
+            const icon = document.getElementById('eye-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        }
+
+        function updateTime() { document.getElementById('header-time').innerText = new Date().toLocaleTimeString(); }
 
         function switchTab(tabId) {
             state.activeTab = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById('tab-' + tabId).classList.remove('hidden');
             document.getElementById('active-tab-label').innerText = tabId;
-            
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg');
-                btn.classList.add('text-slate-500');
-            });
-            document.getElementById('btn-' + tabId).classList.add('bg-indigo-600', 'text-white', 'shadow-lg');
-            document.getElementById('btn-' + tabId).classList.remove('text-slate-500');
-            
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.className = "tab-btn w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 text-slate-500 hover:bg-white/5 hover:text-slate-300");
+            document.getElementById('btn-' + tabId).className = "tab-btn w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 bg-indigo-600 text-white shadow-lg shadow-indigo-600/20";
             lucide.createIcons();
         }
 
@@ -351,14 +401,18 @@
                 try {
                     const response = await fetch(url, options);
                     if (response.ok) return response;
-                    if (response.status !== 429 && response.status < 500) return response;
+                    if (response.status === 429 || response.status >= 500) {
+                        await new Promise(res => setTimeout(res, delay));
+                        delay *= 2;
+                        continue;
+                    }
+                    return response;
                 } catch (e) {
                     if (i === 4) throw e;
+                    await new Promise(res => setTimeout(res, delay));
+                    delay *= 2;
                 }
-                await new Promise(res => setTimeout(res, delay));
-                delay *= 2;
             }
-            throw new Error("API Connection Failed after retries.");
         }
 
         function renderMessages() {
@@ -392,7 +446,6 @@
                     </div>
                 </div>
             `).join('');
-
             lucide.createIcons();
             container.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
             localStorage.setItem('oipoipoi_v6_msgs', JSON.stringify(state.messages));
@@ -403,72 +456,59 @@
             const text = inputEl.value.trim();
             if(!text && state.pendingFiles.length === 0) return;
 
-            const attachedImages = state.pendingFiles.filter(f => f.isImage).map(f => f.data);
-            const userMsg = {
-                id: crypto.randomUUID(),
-                role: 'user',
-                text: text.replace(new RegExp(DEV_PASSCODE, 'g'), '[REDACTED_ACCESS]'),
-                attachedImages,
-                time: new Date().toLocaleTimeString()
-            };
+            const currentKey = apiKey || state.apiKey || "";
 
+            if(!currentKey) {
+                switchTab('settings');
+                log("ACTION BLOCKED: No API key found.");
+                return;
+            }
+
+            const attachedImages = state.pendingFiles.filter(f => f.isImage).map(f => f.data);
+            const userMsg = { id: crypto.randomUUID(), role: 'user', text: text.replace(new RegExp(DEV_PASSCODE, 'g'), '[REDACTED]'), attachedImages, time: new Date().toLocaleTimeString() };
             state.messages.push(userMsg);
             inputEl.value = "";
             state.pendingFiles = [];
             document.getElementById('file-previews').innerHTML = "";
             renderMessages();
 
-            if(text.toLowerCase().startsWith('/gen ')) {
-                await runImageGen(text.replace('/gen ', ''));
-            } else {
-                await runTextGen(text, attachedImages);
-            }
+            const cmd = text.toLowerCase();
+            if(cmd.startsWith('/gen ') || cmd.startsWith('/vid ')) await runImageGen(text.split(' ').slice(1).join(' '), cmd.startsWith('/vid '));
+            else if(cmd.startsWith('/audio ')) await runTextGen("Compose a sonic structure and audio description for: " + text.split(' ').slice(1).join(' '), attachedImages);
+            else await runTextGen(text, attachedImages);
         }
 
         async function runTextGen(prompt, images = [], targetId = null) {
             state.isLoading = true;
             document.getElementById('typing-indicator').classList.remove('hidden');
             renderMessages();
-            log("Querying oiPoipoi Neural Core...");
+            log("Querying Neural Core...");
+
+            const currentKey = apiKey || state.apiKey || "";
 
             try {
-                const contents = [{
-                    role: "user",
-                    parts: [
-                        { text: prompt },
-                        ...images.map(img => ({ inlineData: { mimeType: "image/png", data: img.split(',')[1] } }))
-                    ]
-                }];
-
-                const sysExt = state.isDev ? " [DEV ACCESS ENABLED]" : "";
-                const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_TEXT}:generateContent?key=${apiKey}`, {
+                const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_TEXT}:generateContent?key=${currentKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents,
+                        contents: [{ role: "user", parts: [{ text: prompt }, ...images.map(img => ({ inlineData: { mimeType: "image/png", data: img.split(',')[1] } }))] }],
                         generationConfig: { temperature: parseFloat(state.settings.temp) },
-                        systemInstruction: { parts: [{ text: SYSTEM_PROMPT + sysExt + ` Sarcasm: ${state.settings.sarcasm}%, Tone: ${state.settings.tone}` }] }
+                        systemInstruction: { parts: [{ text: SYSTEM_PROMPT + (state.isDev ? " [DEV]" : "") + ` Sarcasm: ${state.settings.sarcasm}%, Tone: ${state.settings.tone}` }] }
                     })
                 });
 
                 const data = await response.json();
-                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Communication timeout.";
-                const sanitized = aiText.replace(new RegExp(DEV_PASSCODE, 'gi'), "[SECRET_REDACTED]");
+                if (data.error) throw new Error(data.error.message);
+                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!aiText) throw new Error("Neural Core returned empty set.");
+                const sanitized = aiText.replace(new RegExp(DEV_PASSCODE, 'gi'), "[SECRET]");
 
-                if(targetId) {
-                    state.messages = state.messages.map(m => m.id === targetId ? { ...m, text: sanitized, time: new Date().toLocaleTimeString() } : m);
-                } else {
-                    state.messages.push({
-                        id: crypto.randomUUID(),
-                        role: 'assistant',
-                        text: sanitized,
-                        time: new Date().toLocaleTimeString()
-                    });
-                }
+                if(targetId) state.messages = state.messages.map(m => m.id === targetId ? { ...m, text: sanitized, time: new Date().toLocaleTimeString() } : m);
+                else state.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: sanitized, time: new Date().toLocaleTimeString() });
                 log("Synthesis success.");
             } catch (err) {
-                log("CRITICAL ERROR: Core disconnect.");
-                state.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: "Error connecting to core.", time: new Date().toLocaleTimeString() });
+                log(`CRITICAL: ${err.message}`);
+                state.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: `Core Error: ${err.message}`, time: new Date().toLocaleTimeString() });
             } finally {
                 state.isLoading = false;
                 document.getElementById('typing-indicator').classList.add('hidden');
@@ -476,37 +516,39 @@
             }
         }
 
-        async function runImageGen(prompt) {
+        async function runImageGen(prompt, isVideo = false) {
             state.isLoading = true;
             document.getElementById('typing-indicator').classList.remove('hidden');
             renderMessages();
-            log("Imaging engine warming...");
+            log(isVideo ? "Imaging cinematic sequence..." : "Imaging engine warming...");
+            
+            const currentKey = apiKey || state.apiKey || "";
 
             try {
-                const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_IMAGE}:predict?key=${apiKey}`, {
+                const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_IMAGE}:predict?key=${currentKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        instances: { prompt: "8k detailed high quality: " + prompt },
-                        parameters: { sampleCount: 1 }
+                    body: JSON.stringify({ 
+                        instances: { prompt: (isVideo ? "Cinematic high-motion video keyframe: " : "8k detailed high quality: ") + prompt }, 
+                        parameters: { sampleCount: 1 } 
                     })
                 });
                 const data = await response.json();
+                if(data.error) throw new Error(data.error.message);
                 const b64 = data.predictions?.[0]?.bytesBase64Encoded;
+                if(!b64) throw new Error("Null imaging bytes.");
                 
-                if(!b64) throw new Error("Empty image result");
-
-                state.messages.push({
-                    id: crypto.randomUUID(),
-                    role: 'assistant',
-                    text: `Synthesis for "${prompt}" complete. Rendering output...`,
-                    image: `data:image/png;base64,${b64}`,
-                    time: new Date().toLocaleTimeString()
+                state.messages.push({ 
+                    id: crypto.randomUUID(), 
+                    role: 'assistant', 
+                    text: isVideo ? `Cinematic synthesis for "${prompt}" initialized. Keyframe captured.` : `Image generated for "${prompt}".`, 
+                    image: `data:image/png;base64,${b64}`, 
+                    time: new Date().toLocaleTimeString() 
                 });
-                log("Image synthesized.");
+                log("Visual asset synthesized.");
             } catch (e) {
-                log("IMAGE ERROR: Generation failed.");
-                state.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: "Imaging engine failure.", time: new Date().toLocaleTimeString() });
+                log(`IMAGE ERROR: ${e.message}`);
+                state.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: `Image Error: ${e.message}`, time: new Date().toLocaleTimeString() });
             } finally {
                 state.isLoading = false;
                 document.getElementById('typing-indicator').classList.add('hidden');
@@ -516,41 +558,23 @@
 
         function startEdit(id) { state.editingId = id; renderMessages(); }
         function cancelEdit() { state.editingId = null; renderMessages(); }
-
         async function saveEdit(id) {
-            const area = document.getElementById(`edit-area-${id}`);
-            const newText = area.value;
+            const newText = document.getElementById(`edit-area-${id}`).value;
             const index = state.messages.findIndex(m => m.id === id);
-            if(index === -1) return;
-
             state.messages[index].text = newText;
             state.editingId = null;
-            log("Prompt updated. Regenerating...");
-
-            if(index + 1 < state.messages.length && state.messages[index+1].role === 'assistant') {
-                await runTextGen(newText, state.messages[index].attachedImages || [], state.messages[index+1].id);
-            } else if(index === state.messages.length - 1) {
-                await runTextGen(newText, state.messages[index].attachedImages || []);
-            } else {
-                renderMessages();
-            }
+            if(index + 1 < state.messages.length && state.messages[index+1].role === 'assistant') await runTextGen(newText, state.messages[index].attachedImages || [], state.messages[index+1].id);
+            else if(index === state.messages.length - 1) await runTextGen(newText, state.messages[index].attachedImages || []);
+            else renderMessages();
         }
 
         function regenerate(id) {
             const idx = state.messages.findIndex(m => m.id === id);
-            if(idx > 0 && state.messages[idx-1].role === 'user') {
-                runTextGen(state.messages[idx-1].text, state.messages[idx-1].attachedImages || [], id);
-            }
+            if(idx > 0 && state.messages[idx-1].role === 'user') runTextGen(state.messages[idx-1].text, state.messages[idx-1].attachedImages || [], id);
         }
 
         function copyText(t) {
-            const el = document.createElement('textarea');
-            el.value = t;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            log("Copied.");
+            const el = document.createElement('textarea'); el.value = t; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); log("Copied.");
         }
 
         function handleFiles(e) {
@@ -562,63 +586,42 @@
                     state.pendingFiles.push({ name: file.name, isImage, data: ev.target.result });
                     updatePreviews();
                 };
-                if(file.type.startsWith('image/')) reader.readAsDataURL(file);
-                else reader.readAsText(file);
+                if(file.type.startsWith('image/')) reader.readAsDataURL(file); else reader.readAsText(file);
             });
         }
 
         function updatePreviews() {
             const c = document.getElementById('file-previews');
-            c.innerHTML = state.pendingFiles.map((f, i) => `
-                <div class="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-full flex items-center gap-2 border border-indigo-500/20 animate-in slide-in-from-left-2">
-                    <span class="max-w-[100px] truncate">${f.name}</span>
-                    <button onclick="state.pendingFiles.splice(${i},1);updatePreviews()"><i data-lucide="x" class="w-3 h-3"></i></button>
-                </div>
-            `).join('');
+            c.innerHTML = state.pendingFiles.map((f, i) => `<div class="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-full flex items-center gap-2 border border-indigo-500/20"><span class="max-w-[100px] truncate">${f.name}</span><button onclick="state.pendingFiles.splice(${i},1);updatePreviews()"><i data-lucide="x" class="w-3 h-3"></i></button></div>`).join('');
             lucide.createIcons();
         }
 
         function toggleDevModal() { document.getElementById('dev-modal').classList.toggle('hidden'); }
-
         function verifyDevCode() {
-            const c = document.getElementById('dev-pass-input').value;
-            if(c === DEV_PASSCODE) {
-                state.isDev = true;
-                toggleDevModal();
+            if(document.getElementById('dev-pass-input').value === DEV_PASSCODE) {
+                state.isDev = true; toggleDevModal();
                 document.getElementById('btn-dev').classList.remove('hidden');
                 document.getElementById('dev-text').innerText = "ADMIN MODE";
                 document.getElementById('dev-icon').setAttribute('data-lucide', 'shield-alert');
-                document.getElementById('dev-status-btn').className = "w-full flex items-center gap-4 p-4 rounded-2xl transition-all border text-emerald-400 bg-emerald-400/5 border-emerald-500/20 shadow-lg shadow-emerald-500/10";
-                lucide.createIcons();
-                log("ADMIN PRIVILEGES GRANTED.");
-            } else {
-                log("Access denied.");
-                document.getElementById('dev-pass-input').value = "";
-            }
+                document.getElementById('dev-status-btn').className = "w-full flex items-center gap-4 p-4 rounded-2xl transition-all border text-emerald-400 bg-emerald-400/5 border-emerald-500/20 shadow-lg";
+                lucide.createIcons(); log("ADMIN ACCESS GRANTED.");
+            } else { log("Access denied."); document.getElementById('dev-pass-input').value = ""; }
         }
 
         function setTone(t) {
             state.settings.tone = t;
-            document.querySelectorAll('.tone-btn').forEach(b => {
-                b.className = "tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-black/40 border-white/5 text-slate-500";
-                if(b.id === 'tone-' + t) b.className = "tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-indigo-600 border-indigo-500 text-white shadow-lg";
-            });
+            document.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tone-' + t).classList.add('active');
         }
 
         function exportHistory() {
             const blob = new Blob([JSON.stringify(state.messages, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `oipoipoi_log.json`;
-            a.click();
-            log("Exported.");
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `oipoipoi_log.json`; a.click();
         }
 
         function clearHistory() {
-            state.messages = [{ id: 'i1', role: 'assistant', text: 'Wipe complete.', time: new Date().toLocaleTimeString() }];
+            state.messages = [{ id: 'i1', role: 'assistant', text: 'System reset.', time: new Date().toLocaleTimeString() }];
             renderMessages();
-            log("Memory bank purged.");
         }
 
         window.onload = init;
