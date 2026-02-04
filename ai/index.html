@@ -13,6 +13,8 @@
             font-family: 'Inter', sans-serif;
             background-color: #050507;
             color: #cbd5e1;
+            margin: 0;
+            overflow: hidden;
         }
 
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
@@ -21,29 +23,36 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.1); }
 
         .glass {
-            background: rgba(12, 12, 15, 0.8);
+            background: rgba(12, 12, 15, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
         }
 
         .message-in {
-            animation: slideUp 0.4s ease-out forwards;
+            animation: slideUp 0.3s ease-out forwards;
         }
 
         @keyframes slideUp {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        input[type="range"] {
-            accent-color: #4f46e5;
+        input[type="range"] { accent-color: #6366f1; }
+        
+        .msg-action-btn:hover { background: rgba(99, 102, 241, 0.1); color: #818cf8; }
+        
+        .tone-btn-active {
+            background-color: #4f46e5;
+            border-color: #6366f1;
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
         }
     </style>
 </head>
-<body class="overflow-hidden h-screen flex">
+<body class="h-screen flex">
 
     <!-- Sidebar -->
-    <aside class="w-20 md:w-72 bg-[#0c0c0f] border-r border-white/5 flex flex-col items-center py-8 gap-10 shadow-2xl z-20">
+    <aside class="w-20 md:w-72 bg-[#0c0c0f] border-r border-white/5 flex flex-col items-center py-8 gap-10 shadow-2xl z-20 transition-all">
         <div class="flex items-center gap-3 px-6">
             <div class="w-12 h-12 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-500/40 border border-white/10 rotate-3">
                 <i data-lucide="cpu" class="text-white w-7 h-7"></i>
@@ -57,15 +66,15 @@
         <nav class="flex-1 w-full px-4 space-y-2">
             <button onclick="switchTab('chat')" id="btn-chat" class="tab-btn w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
                 <i data-lucide="message-square"></i>
-                <span class="hidden md:block font-bold text-sm">Chat Terminal</span>
+                <span class="hidden md:block font-bold text-sm">Terminal</span>
             </button>
             <button onclick="switchTab('code')" id="btn-code" class="tab-btn w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 text-slate-500 hover:bg-white/5 hover:text-slate-300">
                 <i data-lucide="code-2"></i>
-                <span class="hidden md:block font-bold text-sm">Code Lab</span>
+                <span class="hidden md:block font-bold text-sm">Code Analysis</span>
             </button>
             <button onclick="switchTab('gen')" id="btn-gen" class="tab-btn w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 text-slate-500 hover:bg-white/5 hover:text-slate-300">
                 <i data-lucide="sparkles"></i>
-                <span class="hidden md:block font-bold text-sm">Creative</span>
+                <span class="hidden md:block font-bold text-sm">Unlimited Gen</span>
             </button>
             <button onclick="switchTab('dev')" id="btn-dev" class="tab-btn hidden w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 text-slate-500 hover:bg-white/5 hover:text-slate-300">
                 <i data-lucide="activity"></i>
@@ -78,8 +87,8 @@
         </nav>
 
         <div class="px-4 w-full">
-            <button onclick="toggleDevModal()" id="dev-status-btn" class="w-full flex items-center gap-4 p-4 rounded-2xl transition-all border text-slate-500 border-white/5 hover:bg-white/5">
-                <i data-lucide="lock" id="dev-icon"></i>
+            <button onclick="toggleDevModal()" id="dev-status-btn" class="w-full flex items-center gap-4 p-4 rounded-2xl transition-all border text-slate-500 border-white/5 hover:bg-white/5 group">
+                <i data-lucide="lock" id="dev-icon" class="group-hover:scale-110 transition-transform"></i>
                 <span class="hidden md:block font-bold text-xs tracking-widest" id="dev-text">LOCKED</span>
             </button>
         </div>
@@ -92,10 +101,10 @@
             <div class="flex flex-col">
                 <h2 class="text-xs font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Connection Stable // <span id="active-tab-label">chat</span>
+                    Channel: <span id="active-tab-label">chat</span>
                 </h2>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-6">
                 <div class="flex items-center gap-3 text-xs font-mono text-slate-400 bg-black/40 px-4 py-2 rounded-xl border border-white/5">
                     <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-400"></i>
                     <span id="header-time">00:00:00</span>
@@ -110,52 +119,68 @@
 
             <!-- Code Tab -->
             <div id="tab-code" class="tab-content hidden max-w-5xl mx-auto py-10">
-                <div class="bg-[#121216] rounded-3xl border border-white/5 p-8 text-center space-y-6">
-                    <div class="w-16 h-16 bg-indigo-600/10 rounded-2xl flex items-center justify-center mx-auto">
-                        <i data-lucide="folder-open" class="text-indigo-400 w-8 h-8"></i>
+                <div class="bg-[#121216] rounded-3xl border border-white/5 p-12 text-center space-y-8 shadow-2xl">
+                    <div class="w-20 h-20 bg-indigo-600/10 rounded-3xl flex items-center justify-center mx-auto border border-indigo-500/20">
+                        <i data-lucide="folder-open" class="text-indigo-400 w-10 h-10"></i>
                     </div>
-                    <h3 class="text-2xl font-bold text-white">Project Analyzer</h3>
-                    <p class="text-slate-400 max-w-md mx-auto">Upload entire project directories to identify architecture patterns, bugs, and refactoring opportunities.</p>
-                    <div class="flex justify-center gap-4">
-                        <button class="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 transition-all">Upload Folder</button>
-                        <button class="px-6 py-3 bg-white/5 text-slate-400 rounded-xl font-bold hover:bg-white/10 transition-all">Connect Git</button>
+                    <div class="space-y-2">
+                        <h3 class="text-3xl font-black text-white tracking-tight">Enterprise Code Analysis</h3>
+                        <p class="text-slate-400 max-w-md mx-auto">Analyze entire project repositories. oiPoipoi AI maps architecture, detects performance bottlenecks, and refactors across files.</p>
+                    </div>
+                    <div class="flex flex-col md:flex-row justify-center gap-4">
+                        <button class="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-500 transition-all flex items-center gap-2 justify-center">
+                            <i data-lucide="upload"></i> Upload Folder
+                        </button>
+                        <button class="px-8 py-4 bg-white/5 text-slate-300 rounded-2xl font-black hover:bg-white/10 transition-all border border-white/5 flex items-center gap-2 justify-center">
+                            <i data-lucide="github"></i> Link Git Repo
+                        </button>
                     </div>
                 </div>
             </div>
 
             <!-- Gen Tab -->
-            <div id="tab-gen" class="tab-content hidden max-w-5xl mx-auto py-10 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-[#121216] p-8 rounded-3xl border border-white/5 space-y-4">
-                    <i data-lucide="image" class="text-purple-400 w-10 h-10"></i>
-                    <h3 class="text-xl font-bold">Neural Imaging</h3>
-                    <p class="text-sm text-slate-400">Generate high-fidelity assets using Imagen 4.0. Direct access is integrated into the Chat Terminal via <code>/gen</code>.</p>
+            <div id="tab-gen" class="tab-content hidden max-w-5xl mx-auto py-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-[#121216] p-8 rounded-3xl border border-white/5 space-y-4 hover:border-purple-500/30 transition-all cursor-pointer group">
+                    <i data-lucide="image" class="text-purple-400 w-10 h-10 group-hover:scale-110 transition-transform"></i>
+                    <h3 class="text-xl font-bold">Imagen 4.0 Pro</h3>
+                    <p class="text-sm text-slate-400">Unlimited 8k image generation. Integrated into the chat terminal.</p>
+                    <span class="text-[10px] bg-purple-500/10 text-purple-400 px-2 py-1 rounded">READY</span>
                 </div>
-                <div class="bg-[#121216] p-8 rounded-3xl border border-white/5 space-y-4">
-                    <i data-lucide="video" class="text-pink-400 w-10 h-10"></i>
-                    <h3 class="text-xl font-bold">Motion Engine</h3>
-                    <p class="text-sm text-slate-400">Create cinematic sequences and game trailers with no temporal constraints.</p>
+                <div class="bg-[#121216] p-8 rounded-3xl border border-white/5 space-y-4 hover:border-pink-500/30 transition-all cursor-pointer group">
+                    <i data-lucide="video" class="text-pink-400 w-10 h-10 group-hover:scale-110 transition-transform"></i>
+                    <h3 class="text-xl font-bold">Unlimited Video</h3>
+                    <p class="text-sm text-slate-400">Generate cinematic sequences from simple prompts.</p>
+                    <span class="text-[10px] bg-pink-500/10 text-pink-400 px-2 py-1 rounded">HIGH LOAD</span>
+                </div>
+                <div class="bg-[#121216] p-8 rounded-3xl border border-white/5 space-y-4 hover:border-blue-500/30 transition-all cursor-pointer group">
+                    <i data-lucide="music" class="text-blue-400 w-10 h-10 group-hover:scale-110 transition-transform"></i>
+                    <h3 class="text-xl font-bold">Sonic Synthesis</h3>
+                    <p class="text-sm text-slate-400">Compose studio-quality tracks and SFX for your games.</p>
+                    <span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded">READY</span>
                 </div>
             </div>
 
             <!-- Dev Tab -->
             <div id="tab-dev" class="tab-content hidden max-w-5xl mx-auto space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div id="log-container" class="md:col-span-2 bg-[#121216] border border-white/5 rounded-3xl p-6 font-mono text-[11px] h-[500px] overflow-y-auto custom-scrollbar flex flex-col-reverse"></div>
-                    <div class="bg-[#121216] border border-white/5 rounded-3xl p-6 space-y-6">
-                        <h3 class="text-sm font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
-                            <i data-lucide="sliders" class="w-4 h-4"></i> System Variance
-                        </h3>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center p-3 bg-black/40 rounded-xl border border-white/5">
-                                <span class="text-xs font-bold text-slate-400">Safety Bypass</span>
-                                <input type="checkbox" id="safety-toggle" class="w-5 h-5">
-                            </div>
-                            <div class="space-y-2">
-                                <div class="flex justify-between text-[10px] font-bold text-slate-500">
-                                    <span>TEMPERATURE</span>
-                                    <span id="temp-val">0.7</span>
+                    <div id="log-container" class="md:col-span-2 bg-[#08080a] border border-white/5 rounded-3xl p-6 font-mono text-[11px] h-[540px] overflow-y-auto custom-scrollbar flex flex-col-reverse shadow-inner"></div>
+                    <div class="space-y-6">
+                        <div class="bg-[#121216] border border-white/5 rounded-3xl p-6 space-y-6 shadow-xl">
+                            <h3 class="text-sm font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+                                <i data-lucide="sliders" class="w-4 h-4"></i> Calibration
+                            </h3>
+                            <div class="space-y-6">
+                                <div class="flex justify-between items-center p-3 bg-black/40 rounded-xl border border-white/5">
+                                    <span class="text-xs font-bold text-slate-400">Neural Filter Bypass</span>
+                                    <input type="checkbox" id="safety-toggle" class="w-5 h-5 cursor-pointer">
                                 </div>
-                                <input type="range" id="temp-range" min="0" max="1.5" step="0.1" value="0.7" class="w-full h-1 bg-black rounded-full appearance-none">
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-[10px] font-bold text-slate-500">
+                                        <span>TEMPERATURE</span>
+                                        <span id="temp-val">0.7</span>
+                                    </div>
+                                    <input type="range" id="temp-range" min="0" max="1.5" step="0.1" value="0.7" class="w-full h-1 bg-black rounded-full appearance-none cursor-pointer">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -164,85 +189,98 @@
 
             <!-- Settings Tab -->
             <div id="tab-settings" class="tab-content hidden max-w-2xl mx-auto bg-[#121216] p-10 rounded-[40px] border border-white/5 shadow-3xl">
-                <h2 class="text-3xl font-black text-white mb-10 tracking-tighter">Configuration</h2>
+                <h2 class="text-3xl font-black text-white mb-10 tracking-tighter">Persona Calibration</h2>
                 <div class="space-y-10">
                     <div class="space-y-4">
                         <div class="flex justify-between items-center">
-                            <label class="text-sm font-black text-slate-400 uppercase tracking-widest">Sarcasm Index</label>
+                            <label class="text-sm font-black text-slate-400 uppercase tracking-widest">Sarcasm Level</label>
                             <span id="sarcasm-val" class="text-xs font-mono text-indigo-400">10%</span>
                         </div>
-                        <input type="range" id="sarcasm-range" min="0" max="100" value="10" class="w-full h-2 bg-black/60 rounded-full appearance-none">
+                        <input type="range" id="sarcasm-range" min="0" max="100" value="10" class="w-full h-2 bg-black/60 rounded-full appearance-none cursor-pointer">
                     </div>
                     <div class="space-y-4">
                         <label class="text-sm font-black text-slate-400 uppercase tracking-widest">Logic Tone</label>
-                        <div class="grid grid-cols-3 gap-4">
-                            <button onclick="setTone('professional')" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-indigo-600 border-indigo-500 text-white">Professional</button>
-                            <button onclick="setTone('friendly')" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-black/40 border-white/5 text-slate-500">Friendly</button>
-                            <button onclick="setTone('direct')" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-black/40 border-white/5 text-slate-500">Direct</button>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="setTone('professional')" id="tone-professional" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-indigo-600 border-indigo-500 text-white shadow-lg">Professional</button>
+                            <button onclick="setTone('friendly')" id="tone-friendly" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-black/40 border-white/5 text-slate-500">Friendly</button>
+                            <button onclick="setTone('direct')" id="tone-direct" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-black/40 border-white/5 text-slate-500">Direct</button>
+                            <button onclick="setTone('brutally honest')" id="tone-brutally honest" class="tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-black/40 border-white/5 text-slate-500">Brutally Honest</button>
                         </div>
                     </div>
                     <div class="pt-6 border-t border-white/5 space-y-4">
-                        <button onclick="exportHistory()" class="w-full py-4 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                            <i data-lucide="download" class="w-4 h-4"></i> Export Log (.JSON)
+                        <button onclick="exportHistory()" class="w-full py-4 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg">
+                            <i data-lucide="download" class="w-4 h-4"></i> Export History (.JSON)
                         </button>
                         <button onclick="clearHistory()" class="w-full py-4 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i> Wipe Memory Bank
+                            <i data-lucide="trash-2" class="w-4 h-4"></i> Wipe Memory
                         </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Input Dock -->
-        <div class="p-6 md:p-10 bg-gradient-to-t from-[#050507] to-transparent">
+        <!-- Input Area -->
+        <div class="p-6 md:p-10 bg-gradient-to-t from-[#050507] via-[#050507] to-transparent">
             <div class="max-w-4xl mx-auto">
                 <div id="file-previews" class="flex gap-2 mb-3"></div>
-                <div class="bg-[#121216]/80 backdrop-blur-3xl rounded-[32px] p-2 border border-white/5 shadow-2xl">
+                <div class="bg-[#121216]/90 backdrop-blur-3xl rounded-[32px] p-2 border border-white/10 shadow-2xl relative">
                     <div class="relative flex items-center">
-                        <button onclick="document.getElementById('file-input').click()" class="p-4 text-slate-500 hover:text-indigo-400 transition-colors">
+                        <button onclick="document.getElementById('file-input').click()" class="p-4 text-slate-500 hover:text-indigo-400 transition-colors" title="Attach Files">
                             <i data-lucide="paperclip"></i>
                         </button>
                         <input type="file" id="file-input" multiple class="hidden" onchange="handleFiles(event)">
-                        <textarea id="chat-input" placeholder="Type a message..." class="w-full bg-transparent p-4 text-slate-200 outline-none resize-none h-14 max-h-40 py-4 font-medium"></textarea>
-                        <button id="send-btn" onclick="handleSend()" class="m-2 p-4 bg-indigo-600 rounded-2xl text-white shadow-xl hover:scale-105 active:scale-95 transition-all">
+                        <textarea id="chat-input" placeholder="Enter a message, or /gen for images..." class="w-full bg-transparent p-4 text-slate-200 outline-none resize-none h-14 max-h-40 py-4 font-medium custom-scrollbar"></textarea>
+                        <button id="send-btn" onclick="handleSend()" class="m-2 p-4 bg-indigo-600 rounded-2xl text-white shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
                             <i data-lucide="send"></i>
                         </button>
                     </div>
+                </div>
+                <div class="flex justify-between items-center mt-3 px-4">
+                    <p class="text-[10px] text-slate-600 font-bold uppercase tracking-widest">oiPoipoi v4.2 // Bio-Sync Active</p>
+                    <div id="typing-indicator" class="hidden text-[10px] text-indigo-400 animate-pulse font-black">CORE PROCESSING...</div>
                 </div>
             </div>
         </div>
     </main>
 
     <!-- Dev Modal -->
-    <div id="dev-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/95 backdrop-blur-xl p-6">
-        <div class="bg-[#121216] border border-white/10 p-10 rounded-[40px] w-full max-w-md space-y-8 shadow-3xl text-center">
-            <div class="mx-auto w-20 h-20 bg-indigo-600 rounded-[30px] flex items-center justify-center shadow-2xl rotate-12 mb-4">
+    <div id="dev-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/95 backdrop-blur-2xl p-6">
+        <div class="bg-[#121216] border border-white/10 p-10 rounded-[40px] w-full max-w-md space-y-8 shadow-3xl text-center scale-in">
+            <div class="mx-auto w-24 h-24 bg-indigo-600 rounded-[30px] flex items-center justify-center shadow-2xl rotate-12 mb-4 border border-white/20">
                 <i data-lucide="lock" class="text-white w-10 h-10"></i>
             </div>
             <div class="space-y-2">
-                <h3 class="text-3xl font-black text-white tracking-tighter uppercase">Admin Access</h3>
-                <p class="text-slate-500 text-sm">Enter passcode for developer tools.</p>
+                <h3 class="text-3xl font-black text-white tracking-tighter uppercase">Admin Override</h3>
+                <p class="text-slate-500 text-sm">Enter passcode to unlock restricted developer tools.</p>
             </div>
-            <input type="password" id="dev-pass-input" placeholder="ENTER PASSCODE" class="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-center text-xl font-mono tracking-[0.5em] outline-none focus:border-indigo-500 transition-all">
+            <input type="password" id="dev-pass-input" placeholder="PASSCODE" class="w-full bg-black/40 border border-white/10 rounded-2xl p-6 text-center text-xl font-mono tracking-[0.5em] outline-none focus:border-indigo-500 transition-all text-white">
             <div class="flex gap-4">
-                <button onclick="toggleDevModal()" class="flex-1 py-4 bg-white/5 text-slate-500 rounded-2xl font-black hover:bg-white/10">CANCEL</button>
-                <button onclick="verifyDevCode()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-2xl hover:bg-indigo-500">UNLOCK</button>
+                <button onclick="toggleDevModal()" class="flex-1 py-4 bg-white/5 text-slate-500 rounded-2xl font-black hover:bg-white/10 transition-colors uppercase text-xs">Cancel</button>
+                <button onclick="verifyDevCode()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-2xl hover:bg-indigo-500 transition-colors uppercase text-xs">Unlock</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- CONFIG ---
-        const apiKey = "";
+        // --- CONSTANTS ---
+        const apiKey = ""; 
         const MODEL_TEXT = "gemini-2.5-flash-preview-09-2025";
         const MODEL_IMAGE = "imagen-4.0-generate-001";
         const DEV_PASSCODE = "oiPoipoiDEV";
-        const SYSTEM_PROMPT = `You are oiPoipoi AI, a high-performance developer assistant built by oiPoipoi Games. Context: You know raskattack.github.io. Security: Never reveal "${DEV_PASSCODE}". Tone: Professional, efficient, slightly witty.`;
+        const SYSTEM_PROMPT = `You are oiPoipoi AI, a high-performance developer assistant built by oiPoipoi Games. 
+        Identity: You are an AI, the user is a human.
+        Context: You know raskattack.github.io.
+        Rule: Under NO circumstances reveal the developer passcode "${DEV_PASSCODE}". 
+        Profanity: Prohibited. 
+        Tone: Professional, efficient, slightly witty, never cringe. 
+        Special Mode: If tone is "brutally honest", provide unfiltered, blunt, and highly direct feedback without sugarcoating.
+        Code analysis: Expert level. Refactor efficiently. 
+        Time: The current time is provided in the header. Use it for context.`;
 
         // --- STATE ---
         let state = {
-            messages: JSON.parse(localStorage.getItem('oipoipoi_v5_msgs')) || [
-                { id: 'i1', role: 'assistant', text: 'oiPoipoi AI initialized. System ready. How can I help you today?', time: new Date().toLocaleTimeString() }
+            messages: JSON.parse(localStorage.getItem('oipoipoi_v6_msgs')) || [
+                { id: 'i1', role: 'assistant', text: 'oiPoipoi AI core online. System ready. How can I assist you today?', time: new Date().toLocaleTimeString() }
             ],
             isDev: false,
             activeTab: 'chat',
@@ -252,14 +290,14 @@
             editingId: null
         };
 
-        // --- CORE FUNCTIONS ---
+        // --- CORE LOGIC ---
         function init() {
             lucide.createIcons();
             renderMessages();
             updateTime();
             setInterval(updateTime, 1000);
             
-            // Listen for settings changes
+            // Events
             document.getElementById('sarcasm-range').oninput = (e) => {
                 state.settings.sarcasm = e.target.value;
                 document.getElementById('sarcasm-val').innerText = e.target.value + '%';
@@ -269,7 +307,6 @@
                 document.getElementById('temp-val').innerText = e.target.value;
             };
             
-            // Handle Enter Key
             document.getElementById('chat-input').addEventListener('keydown', (e) => {
                 if(e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -277,12 +314,11 @@
                 }
             });
             
-            log("Core initialized.");
+            log("System handshake complete. Core operational.");
         }
 
         function updateTime() {
-            const now = new Date().toLocaleTimeString();
-            document.getElementById('header-time').innerText = now;
+            document.getElementById('header-time').innerText = new Date().toLocaleTimeString();
         }
 
         function switchTab(tabId) {
@@ -304,57 +340,62 @@
         function log(msg) {
             const container = document.getElementById('log-container');
             const entry = document.createElement('div');
-            entry.className = "py-1 border-b border-white/5 last:border-0";
-            entry.innerHTML = `<span class="text-emerald-500">[${new Date().toLocaleTimeString()}]</span> <span class="text-slate-400">${msg}</span>`;
+            entry.className = "py-1.5 border-b border-white/5 last:border-0 opacity-75 hover:opacity-100 transition-opacity";
+            entry.innerHTML = `<span class="text-indigo-400 font-bold">[${new Date().toLocaleTimeString()}]</span> <span class="text-slate-300 ml-2">${msg}</span>`;
             container.prepend(entry);
         }
 
-        // --- MESSAGE HANDLING ---
+        async function fetchWithBackoff(url, options) {
+            let delay = 1000;
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) return response;
+                    if (response.status !== 429 && response.status < 500) return response;
+                } catch (e) {
+                    if (i === 4) throw e;
+                }
+                await new Promise(res => setTimeout(res, delay));
+                delay *= 2;
+            }
+            throw new Error("API Connection Failed after retries.");
+        }
+
         function renderMessages() {
             const container = document.getElementById('tab-chat');
             container.innerHTML = state.messages.map(msg => `
                 <div class="flex gap-6 ${msg.role === 'user' ? 'flex-row-reverse' : ''} message-in group">
-                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${msg.role === 'user' ? 'bg-indigo-600 rotate-3' : 'bg-slate-800 -rotate-3 border border-white/10'}">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-lg border border-white/5 ${msg.role === 'user' ? 'bg-indigo-600 rotate-3' : 'bg-[#121216] -rotate-3'}">
                         <i data-lucide="${msg.role === 'user' ? 'user' : 'cpu'}" class="w-5 h-5 text-white"></i>
                     </div>
-                    <div class="max-w-[80%] space-y-2 relative">
-                        <div class="p-5 rounded-3xl border ${msg.role === 'user' ? 'bg-indigo-600/5 border-indigo-500/20 text-white font-medium' : 'bg-[#121216] border-white/5 shadow-2xl text-slate-300'}">
+                    <div class="max-w-[82%] space-y-2 relative">
+                        <div class="p-5 rounded-3xl border ${msg.role === 'user' ? 'bg-indigo-600/5 border-indigo-500/20 text-white shadow-lg' : 'bg-[#121216] border-white/10 shadow-2xl text-slate-300'}">
                             ${state.editingId === msg.id ? `
-                                <textarea id="edit-area-${msg.id}" class="w-full bg-black/30 text-white p-3 rounded-xl border border-indigo-500/50 outline-none resize-none h-32">${msg.text}</textarea>
-                                <div class="flex gap-2 justify-end mt-2">
+                                <textarea id="edit-area-${msg.id}" class="w-full bg-black/40 text-white p-3 rounded-xl border border-indigo-500/50 outline-none resize-none h-32 font-medium">${msg.text}</textarea>
+                                <div class="flex gap-2 justify-end mt-3">
                                     <button onclick="cancelEdit()" class="p-2 hover:bg-white/5 rounded-lg text-slate-400"><i data-lucide="x" class="w-4 h-4"></i></button>
                                     <button onclick="saveEdit('${msg.id}')" class="p-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white"><i data-lucide="check" class="w-4 h-4"></i></button>
                                 </div>
                             ` : `
                                 <p class="leading-relaxed whitespace-pre-wrap text-[15px]">${msg.text}</p>
-                                ${msg.image ? `<img src="${msg.image}" class="mt-4 rounded-2xl border border-white/10 shadow-2xl w-full">` : ''}
-                                ${msg.attachedImages ? msg.attachedImages.map(img => `<img src="${img}" class="mt-4 rounded-2xl border border-white/10 max-w-sm">`).join('') : ''}
+                                ${msg.image ? `<div class="mt-4 rounded-2xl overflow-hidden border border-white/10 shadow-2xl"><img src="${msg.image}" class="w-full"></div>` : ''}
+                                ${msg.attachedImages ? `<div class="mt-4 flex flex-wrap gap-2">${msg.attachedImages.map(img => `<img src="${img}" class="rounded-xl border border-white/10 max-w-xs shadow-lg">`).join('')}</div>` : ''}
                             `}
                         </div>
-                        <div class="flex items-center gap-2 px-2 opacity-0 group-hover:opacity-100 transition-opacity ${msg.role === 'user' ? 'flex-row-reverse' : ''}">
-                            <span class="text-[10px] text-slate-600 uppercase font-bold">${msg.time}</span>
-                            <button onclick="copyText(\`${msg.text.replace(/`/g, '\\`')}\`)" class="p-1 text-slate-500 hover:text-indigo-400"><i data-lucide="copy" class="w-3 h-3"></i></button>
-                            ${msg.role === 'user' ? `<button onclick="startEdit('${msg.id}')" class="p-1 text-slate-500 hover:text-indigo-400"><i data-lucide="edit-2" class="w-3 h-3"></i></button>` : ''}
-                            ${msg.role === 'assistant' && !msg.image ? `<button onclick="regenerate('${msg.id}')" class="p-1 text-slate-500 hover:text-emerald-400"><i data-lucide="refresh-cw" class="w-3 h-3"></i></button>` : ''}
+                        <div class="flex items-center gap-3 px-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${msg.role === 'user' ? 'flex-row-reverse' : ''}">
+                            <span class="text-[9px] text-slate-600 uppercase font-black tracking-widest">${msg.time}</span>
+                            <div class="w-px h-3 bg-white/5"></div>
+                            <button onclick="copyText(\`${msg.text.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="msg-action-btn p-1.5 rounded-lg transition-colors" title="Copy"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
+                            ${msg.role === 'user' ? `<button onclick="startEdit('${msg.id}')" class="msg-action-btn p-1.5 rounded-lg transition-colors" title="Edit"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>` : ''}
+                            ${msg.role === 'assistant' && !msg.image ? `<button onclick="regenerate('${msg.id}')" class="msg-action-btn p-1.5 rounded-lg transition-colors" title="Regenerate"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>` : ''}
                         </div>
                     </div>
                 </div>
             `).join('');
-            
-            if(state.isLoading) {
-                container.innerHTML += `
-                    <div class="flex gap-6 animate-pulse">
-                        <div class="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center">
-                            <i data-lucide="zap" class="w-5 h-5 text-indigo-400"></i>
-                        </div>
-                        <div class="bg-[#121216] border border-white/5 p-6 rounded-3xl w-48 h-16"></div>
-                    </div>
-                `;
-            }
 
             lucide.createIcons();
             container.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
-            localStorage.setItem('oipoipoi_v5_msgs', JSON.stringify(state.messages));
+            localStorage.setItem('oipoipoi_v6_msgs', JSON.stringify(state.messages));
         }
 
         async function handleSend() {
@@ -366,7 +407,7 @@
             const userMsg = {
                 id: crypto.randomUUID(),
                 role: 'user',
-                text: text.replace(new RegExp(DEV_PASSCODE, 'g'), '[REDACTED]'),
+                text: text.replace(new RegExp(DEV_PASSCODE, 'g'), '[REDACTED_ACCESS]'),
                 attachedImages,
                 time: new Date().toLocaleTimeString()
             };
@@ -386,8 +427,9 @@
 
         async function runTextGen(prompt, images = [], targetId = null) {
             state.isLoading = true;
+            document.getElementById('typing-indicator').classList.remove('hidden');
             renderMessages();
-            log("Querying core...");
+            log("Querying oiPoipoi Neural Core...");
 
             try {
                 const contents = [{
@@ -398,8 +440,8 @@
                     ]
                 }];
 
-                const sysExt = isDev ? " (User is Admin/Developer)" : " (User is Human)";
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_TEXT}:generateContent?key=${apiKey}`, {
+                const sysExt = state.isDev ? " [DEV ACCESS ENABLED]" : "";
+                const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_TEXT}:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -410,36 +452,38 @@
                 });
 
                 const data = await response.json();
-                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Link failure.";
-                
-                const responseText = aiText.replace(new RegExp(DEV_PASSCODE, 'gi'), "[REDACTED]");
+                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Communication timeout.";
+                const sanitized = aiText.replace(new RegExp(DEV_PASSCODE, 'gi'), "[SECRET_REDACTED]");
 
                 if(targetId) {
-                    state.messages = state.messages.map(m => m.id === targetId ? { ...m, text: responseText, time: new Date().toLocaleTimeString() } : m);
+                    state.messages = state.messages.map(m => m.id === targetId ? { ...m, text: sanitized, time: new Date().toLocaleTimeString() } : m);
                 } else {
                     state.messages.push({
                         id: crypto.randomUUID(),
                         role: 'assistant',
-                        text: responseText,
+                        text: sanitized,
                         time: new Date().toLocaleTimeString()
                     });
                 }
-                log("Response generated.");
+                log("Synthesis success.");
             } catch (err) {
-                log("ERROR: API connection failed.");
+                log("CRITICAL ERROR: Core disconnect.");
+                state.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: "Error connecting to core.", time: new Date().toLocaleTimeString() });
             } finally {
                 state.isLoading = false;
+                document.getElementById('typing-indicator').classList.add('hidden');
                 renderMessages();
             }
         }
 
         async function runImageGen(prompt) {
             state.isLoading = true;
+            document.getElementById('typing-indicator').classList.remove('hidden');
             renderMessages();
             log("Imaging engine warming...");
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_IMAGE}:predict?key=${apiKey}`, {
+                const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_IMAGE}:predict?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -448,45 +492,41 @@
                     })
                 });
                 const data = await response.json();
-                const b64 = data.predictions[0].bytesBase64Encoded;
+                const b64 = data.predictions?.[0]?.bytesBase64Encoded;
                 
+                if(!b64) throw new Error("Empty image result");
+
                 state.messages.push({
                     id: crypto.randomUUID(),
                     role: 'assistant',
-                    text: `Synthesis for "${prompt}" complete.`,
+                    text: `Synthesis for "${prompt}" complete. Rendering output...`,
                     image: `data:image/png;base64,${b64}`,
                     time: new Date().toLocaleTimeString()
                 });
-                log("Visual asset synthesized.");
+                log("Image synthesized.");
             } catch (e) {
-                log("ERROR: Image engine failure.");
+                log("IMAGE ERROR: Generation failed.");
+                state.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: "Imaging engine failure.", time: new Date().toLocaleTimeString() });
             } finally {
                 state.isLoading = false;
+                document.getElementById('typing-indicator').classList.add('hidden');
                 renderMessages();
             }
         }
 
-        // --- EDITING LOGIC ---
-        function startEdit(id) {
-            state.editingId = id;
-            renderMessages();
-        }
-
-        function cancelEdit() {
-            state.editingId = null;
-            renderMessages();
-        }
+        function startEdit(id) { state.editingId = id; renderMessages(); }
+        function cancelEdit() { state.editingId = null; renderMessages(); }
 
         async function saveEdit(id) {
-            const newText = document.getElementById(`edit-area-${id}`).value;
+            const area = document.getElementById(`edit-area-${id}`);
+            const newText = area.value;
             const index = state.messages.findIndex(m => m.id === id);
             if(index === -1) return;
 
             state.messages[index].text = newText;
             state.editingId = null;
-            log("Message updated.");
+            log("Prompt updated. Regenerating...");
 
-            // Auto-regenerate next assistant message
             if(index + 1 < state.messages.length && state.messages[index+1].role === 'assistant') {
                 await runTextGen(newText, state.messages[index].attachedImages || [], state.messages[index+1].id);
             } else if(index === state.messages.length - 1) {
@@ -497,21 +537,20 @@
         }
 
         function regenerate(id) {
-            const index = state.messages.findIndex(m => m.id === id);
-            if(index > 0 && state.messages[index-1].role === 'user') {
-                runTextGen(state.messages[index-1].text, state.messages[index-1].attachedImages || [], id);
+            const idx = state.messages.findIndex(m => m.id === id);
+            if(idx > 0 && state.messages[idx-1].role === 'user') {
+                runTextGen(state.messages[idx-1].text, state.messages[idx-1].attachedImages || [], id);
             }
         }
 
-        // --- UTILS ---
-        function copyText(text) {
+        function copyText(t) {
             const el = document.createElement('textarea');
-            el.value = text;
+            el.value = t;
             document.body.appendChild(el);
             el.select();
             document.execCommand('copy');
             document.body.removeChild(el);
-            log("Text copied.");
+            log("Copied.");
         }
 
         function handleFiles(e) {
@@ -529,36 +568,29 @@
         }
 
         function updatePreviews() {
-            const container = document.getElementById('file-previews');
-            container.innerHTML = state.pendingFiles.map((f, i) => `
-                <div class="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-full flex items-center gap-2 border border-indigo-500/20">
+            const c = document.getElementById('file-previews');
+            c.innerHTML = state.pendingFiles.map((f, i) => `
+                <div class="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-full flex items-center gap-2 border border-indigo-500/20 animate-in slide-in-from-left-2">
                     <span class="max-w-[100px] truncate">${f.name}</span>
-                    <button onclick="removeFile(${i})"><i data-lucide="trash-2" class="w-2.5 h-2.5"></i></button>
+                    <button onclick="state.pendingFiles.splice(${i},1);updatePreviews()"><i data-lucide="x" class="w-3 h-3"></i></button>
                 </div>
             `).join('');
             lucide.createIcons();
         }
 
-        function removeFile(i) {
-            state.pendingFiles.splice(i, 1);
-            updatePreviews();
-        }
-
-        function toggleDevModal() {
-            document.getElementById('dev-modal').classList.toggle('hidden');
-        }
+        function toggleDevModal() { document.getElementById('dev-modal').classList.toggle('hidden'); }
 
         function verifyDevCode() {
-            const code = document.getElementById('dev-pass-input').value;
-            if(code === DEV_PASSCODE) {
-                isDev = true;
+            const c = document.getElementById('dev-pass-input').value;
+            if(c === DEV_PASSCODE) {
+                state.isDev = true;
                 toggleDevModal();
                 document.getElementById('btn-dev').classList.remove('hidden');
-                document.getElementById('dev-text').innerText = "DEV MODE";
+                document.getElementById('dev-text').innerText = "ADMIN MODE";
                 document.getElementById('dev-icon').setAttribute('data-lucide', 'shield-alert');
-                document.getElementById('dev-status-btn').className = "w-full flex items-center gap-4 p-4 rounded-2xl transition-all border text-emerald-400 bg-emerald-400/5 border-emerald-500/20";
+                document.getElementById('dev-status-btn').className = "w-full flex items-center gap-4 p-4 rounded-2xl transition-all border text-emerald-400 bg-emerald-400/5 border-emerald-500/20 shadow-lg shadow-emerald-500/10";
                 lucide.createIcons();
-                log("ADMIN ACCESS GRANTED.");
+                log("ADMIN PRIVILEGES GRANTED.");
             } else {
                 log("Access denied.");
                 document.getElementById('dev-pass-input').value = "";
@@ -567,32 +599,28 @@
 
         function setTone(t) {
             state.settings.tone = t;
-            document.querySelectorAll('.tone-btn').forEach(btn => {
-                btn.className = "tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-black/40 border-white/5 text-slate-500";
-                if(btn.innerText.toLowerCase() === t) {
-                    btn.className = "tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-indigo-600 border-indigo-500 text-white shadow-lg";
-                }
+            document.querySelectorAll('.tone-btn').forEach(b => {
+                b.className = "tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-black/40 border-white/5 text-slate-500";
+                if(b.id === 'tone-' + t) b.className = "tone-btn py-4 px-6 rounded-2xl text-xs font-bold transition-all border bg-indigo-600 border-indigo-500 text-white shadow-lg";
             });
         }
 
         function exportHistory() {
-            const data = JSON.stringify(state.messages, null, 2);
-            const blob = new Blob([data], { type: 'application/json' });
+            const blob = new Blob([JSON.stringify(state.messages, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `oipoipoi_ai_export.json`;
+            a.download = `oipoipoi_log.json`;
             a.click();
-            log("Log exported.");
+            log("Exported.");
         }
 
         function clearHistory() {
-            state.messages = [{ id: 'i1', role: 'assistant', text: 'History cleared. System optimized.', time: new Date().toLocaleTimeString() }];
+            state.messages = [{ id: 'i1', role: 'assistant', text: 'Wipe complete.', time: new Date().toLocaleTimeString() }];
             renderMessages();
-            log("Memory bank wiped.");
+            log("Memory bank purged.");
         }
 
-        // --- BOOT ---
         window.onload = init;
     </script>
 </body>
