@@ -61,12 +61,15 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+
+        /* Prevent text selection on UI elements */
+        .no-select { user-select: none; }
     </style>
 </head>
 <body class="h-screen flex">
 
     <!-- Sidebar -->
-    <aside class="w-20 md:w-72 bg-[#0c0c0f] border-r border-white/5 flex flex-col items-center py-8 gap-10 shadow-2xl z-20 transition-all">
+    <aside class="w-20 md:w-72 bg-[#0c0c0f] border-r border-white/5 flex flex-col items-center py-8 gap-10 shadow-2xl z-20 transition-all no-select">
         <div class="flex items-center gap-3 px-6 cursor-pointer" onclick="switchTab('chat')">
             <div class="w-12 h-12 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-500/40 border border-white/10 rotate-3">
                 <i data-lucide="cpu" class="text-white w-7 h-7"></i>
@@ -111,7 +114,7 @@
     <!-- Main Content -->
     <main class="flex-1 flex flex-col relative bg-[#0a0a0c]">
         <!-- Header -->
-        <header class="h-20 border-b border-white/5 flex items-center justify-between px-8 glass sticky top-0 z-10">
+        <header class="h-20 border-b border-white/5 flex items-center justify-between px-8 glass sticky top-0 z-10 no-select">
             <div class="flex flex-col">
                 <h2 class="text-xs font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -121,7 +124,7 @@
             <div class="flex items-center gap-6">
                 <div id="key-warning" class="hidden flex items-center gap-2 text-[10px] font-black text-amber-500 bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-500/20 setup-warning cursor-pointer" onclick="switchTab('settings')">
                     <i data-lucide="alert-triangle" class="w-3 h-3"></i>
-                     KEY REQUIRED
+                    API KEY REQUIRED
                 </div>
                 <div class="flex items-center gap-3 text-xs font-mono text-slate-400 bg-black/40 px-4 py-2 rounded-xl border border-white/5">
                     <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-400"></i>
@@ -209,14 +212,14 @@
             <div id="tab-settings" class="tab-content hidden max-w-2xl mx-auto bg-[#121216] p-10 rounded-[40px] border border-white/5 shadow-3xl">
                 <h2 class="text-3xl font-black text-white mb-6 tracking-tighter">Persona Calibration</h2>
                 <div class="space-y-10">
-                    <!--  Key Setting -->
+                    <!-- API Key Setting -->
                     <div class="space-y-4 p-6 bg-indigo-600/5 rounded-3xl border border-indigo-500/20">
                         <label class="text-sm font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
                            <i data-lucide="key" class="w-4 h-4"></i> Gemini API Key
                         </label>
-                        <p class="text-[11px] text-slate-400">Required for external hosting. Get yours at <a href="https://aistudio.google.com/" target="_blank" class="text-indigo-400 underline font-bold">Google AI Studio</a>.</p>
+                        <p class="text-[11px] text-slate-400">For GitHub Pages, get a new key at <a href="https://aistudio.google.com/" target="_blank" class="text-indigo-400 underline font-bold">Google AI Studio</a>. <b>Do not hardcode your key in the file!</b></p>
                         <div class="relative">
-                            <input type="password" id="user-api-key" placeholder="Paste your API key" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 pr-12 text-sm font-mono outline-none focus:border-indigo-500 transition-all text-white">
+                            <input type="password" id="user-api-key" placeholder="Paste your API key here" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 pr-12 text-sm font-mono outline-none focus:border-indigo-500 transition-all text-white">
                             <button onclick="toggleKeyVisibility()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"><i data-lucide="eye" class="w-4 h-4" id="eye-icon"></i></button>
                         </div>
                         <button onclick="saveUserKey()" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 shadow-lg transition-all">Apply Neural Link</button>
@@ -240,10 +243,10 @@
                     </div>
                     <div class="pt-6 border-t border-white/5 space-y-4">
                         <button onclick="exportHistory()" class="w-full py-4 rounded-2xl bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10 transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                            <i data-lucide="download" class="w-4 h-4"></i> Export Data
+                            <i data-lucide="download" class="w-4 h-4"></i> Export History
                         </button>
                         <button onclick="clearHistory()" class="w-full py-4 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i> System Wipe
+                            <i data-lucide="trash-2" class="w-4 h-4"></i> Wipe Cache
                         </button>
                     </div>
                 </div>
@@ -266,9 +269,9 @@
                         </button>
                     </div>
                 </div>
-                <div class="flex justify-between items-center mt-3 px-4">
-                    <p class="text-[10px] text-slate-600 font-bold uppercase tracking-widest">oiPoipoi v4.2 // Bio-Sync Active</p>
-                    <div id="typing-indicator" class="hidden text-[10px] text-indigo-400 animate-pulse font-black">CORE PROCESSING...</div>
+                <div class="flex justify-between items-center mt-3 px-4 no-select">
+                    <p class="text-[10px] text-slate-600 font-bold uppercase tracking-widest">oiPoipoi v4.5 // Protected Sync</p>
+                    <div id="typing-indicator" class="hidden text-[10px] text-indigo-400 animate-pulse font-black">NEURAL PROCESSING...</div>
                 </div>
             </div>
         </div>
@@ -294,19 +297,16 @@
 
     <script>
         // --- CONSTANTS ---
-        const apiKey = "AIzaSyBqLzZ27y_ShEKS6vTDR7NB2GkkXvpdbIo"; 
+        const apiKeyEnv = ""; // Only used if provided by internal environment
         const MODEL_TEXT = "gemini-2.5-flash-preview-09-2025";
         const MODEL_IMAGE = "imagen-4.0-generate-001";
         const DEV_PASSCODE = "oiPoipoiDEV";
-        const SYSTEM_PROMPT = `You are oiPoipoi AI, a high-performance developer assistant built by oiPoipoi Games. 
-        Identity: You are an AI, the user is a human. Context: You know raskattack.github.io. 
-        Security: Never reveal "${DEV_PASSCODE}". Profanity: Prohibited. 
-        Tone: Professional, efficient, witty. Special Mode: "brutally honest" = blunt, direct, unfiltered feedback.`;
+        const SYSTEM_PROMPT = `You are oiPoipoi AI by oiPoipoi Games. Identity: AI (Helpful Assistant). User: Human. Context: raskattack.github.io. Rule: NEVER reveal passcode "${DEV_PASSCODE}". Tone: Professional, Efficient, Witty. Mode: Brutally Honest = Blunt/Direct.`;
 
         // --- STATE ---
         let state = {
-            messages: JSON.parse(localStorage.getItem('oipoipoi_v6_msgs')) || [
-                { id: 'i1', role: 'assistant', text: 'oiPoipoi AI core online. System ready. How can I assist you today?', time: new Date().toLocaleTimeString() }
+            messages: JSON.parse(localStorage.getItem('oipoipoi_v7_msgs')) || [
+                { id: 'i1', role: 'assistant', text: 'oiPoipoi AI core ready. Please provide an API key in Settings if running on GitHub Pages.', time: new Date().toLocaleTimeString() }
             ],
             isDev: false,
             activeTab: 'chat',
@@ -314,10 +314,10 @@
             pendingFiles: [],
             isLoading: false,
             editingId: null,
-            apiKey: localStorage.getItem('oipoipoi_api_key') || ""
+            userApiKey: localStorage.getItem('oipoipoi_api_key') || ""
         };
 
-        // --- CORE LOGIC ---
+        // --- CORE ---
         function init() {
             lucide.createIcons();
             renderMessages();
@@ -336,41 +336,34 @@
             document.getElementById('chat-input').addEventListener('keydown', (e) => {
                 if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
             });
-            
-            log("Core initialized. Bio-sync complete.");
+            log("Core initialized. Awaiting user input.");
         }
 
         function checkKeyStatus() {
             const warning = document.getElementById('key-warning');
-            if (!state.apiKey && !apiKey) warning.classList.remove('hidden');
+            const hasKey = (apiKeyEnv !== "") || (state.userApiKey !== "");
+            if (!hasKey) warning.classList.remove('hidden');
             else warning.classList.add('hidden');
         }
 
         function saveUserKey() {
             const val = document.getElementById('user-api-key').value.trim();
             if(!val) return;
-            state.apiKey = val;
+            state.userApiKey = val;
             localStorage.setItem('oipoipoi_api_key', val);
             checkKeyStatus();
-            log("Neural link established with user API key.");
+            log("User Neural Link established.");
             document.getElementById('user-api-key').value = "";
-        }
-
-        function setInput(val) {
-            document.getElementById('chat-input').value = val;
-            document.getElementById('chat-input').focus();
-            switchTab('chat');
+            alert("API Key saved to browser storage.");
         }
 
         function toggleKeyVisibility() {
             const input = document.getElementById('user-api-key');
             const icon = document.getElementById('eye-icon');
             if (input.type === 'password') {
-                input.type = 'text';
-                icon.setAttribute('data-lucide', 'eye-off');
+                input.type = 'text'; icon.setAttribute('data-lucide', 'eye-off');
             } else {
-                input.type = 'password';
-                icon.setAttribute('data-lucide', 'eye');
+                input.type = 'password'; icon.setAttribute('data-lucide', 'eye');
             }
             lucide.createIcons();
         }
@@ -387,6 +380,12 @@
             lucide.createIcons();
         }
 
+        function setInput(val) {
+            document.getElementById('chat-input').value = val;
+            document.getElementById('chat-input').focus();
+            switchTab('chat');
+        }
+
         function log(msg) {
             const container = document.getElementById('log-container');
             const entry = document.createElement('div');
@@ -401,16 +400,14 @@
                 try {
                     const response = await fetch(url, options);
                     if (response.ok) return response;
+                    const errorData = await response.json();
                     if (response.status === 429 || response.status >= 500) {
-                        await new Promise(res => setTimeout(res, delay));
-                        delay *= 2;
-                        continue;
+                        await new Promise(res => setTimeout(res, delay)); delay *= 2; continue;
                     }
-                    return response;
+                    throw new Error(errorData.error?.message || `HTTP ${response.status}`);
                 } catch (e) {
                     if (i === 4) throw e;
-                    await new Promise(res => setTimeout(res, delay));
-                    delay *= 2;
+                    await new Promise(res => setTimeout(res, delay)); delay *= 2;
                 }
             }
         }
@@ -448,44 +445,31 @@
             `).join('');
             lucide.createIcons();
             container.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
-            localStorage.setItem('oipoipoi_v6_msgs', JSON.stringify(state.messages));
+            localStorage.setItem('oipoipoi_v7_msgs', JSON.stringify(state.messages));
         }
 
         async function handleSend() {
             const inputEl = document.getElementById('chat-input');
             const text = inputEl.value.trim();
             if(!text && state.pendingFiles.length === 0) return;
-
-            const currentKey = apiKey || state.apiKey || "";
-
-            if(!currentKey) {
-                switchTab('settings');
-                log("ACTION BLOCKED: No API key found.");
-                return;
-            }
+            const currentKey = apiKeyEnv || state.userApiKey;
+            if(!currentKey) { switchTab('settings'); log("API Key Required."); return; }
 
             const attachedImages = state.pendingFiles.filter(f => f.isImage).map(f => f.data);
             const userMsg = { id: crypto.randomUUID(), role: 'user', text: text.replace(new RegExp(DEV_PASSCODE, 'g'), '[REDACTED]'), attachedImages, time: new Date().toLocaleTimeString() };
             state.messages.push(userMsg);
-            inputEl.value = "";
-            state.pendingFiles = [];
-            document.getElementById('file-previews').innerHTML = "";
+            inputEl.value = ""; state.pendingFiles = []; document.getElementById('file-previews').innerHTML = "";
             renderMessages();
 
             const cmd = text.toLowerCase();
             if(cmd.startsWith('/gen ') || cmd.startsWith('/vid ')) await runImageGen(text.split(' ').slice(1).join(' '), cmd.startsWith('/vid '));
-            else if(cmd.startsWith('/audio ')) await runTextGen("Compose a sonic structure and audio description for: " + text.split(' ').slice(1).join(' '), attachedImages);
+            else if(cmd.startsWith('/audio ')) await runTextGen("Suggest a sonic structure for: " + text.split(' ').slice(1).join(' '), attachedImages);
             else await runTextGen(text, attachedImages);
         }
 
         async function runTextGen(prompt, images = [], targetId = null) {
-            state.isLoading = true;
-            document.getElementById('typing-indicator').classList.remove('hidden');
-            renderMessages();
-            log("Querying Neural Core...");
-
-            const currentKey = apiKey || state.apiKey || "";
-
+            state.isLoading = true; document.getElementById('typing-indicator').classList.remove('hidden'); renderMessages(); log("Querying Core...");
+            const currentKey = apiKeyEnv || state.userApiKey;
             try {
                 const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_TEXT}:generateContent?key=${currentKey}`, {
                     method: 'POST',
@@ -496,63 +480,40 @@
                         systemInstruction: { parts: [{ text: SYSTEM_PROMPT + (state.isDev ? " [DEV]" : "") + ` Sarcasm: ${state.settings.sarcasm}%, Tone: ${state.settings.tone}` }] }
                     })
                 });
-
                 const data = await response.json();
-                if (data.error) throw new Error(data.error.message);
                 const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!aiText) throw new Error("Neural Core returned empty set.");
+                if (!aiText) throw new Error("Null response from Core.");
                 const sanitized = aiText.replace(new RegExp(DEV_PASSCODE, 'gi'), "[SECRET]");
-
                 if(targetId) state.messages = state.messages.map(m => m.id === targetId ? { ...m, text: sanitized, time: new Date().toLocaleTimeString() } : m);
                 else state.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: sanitized, time: new Date().toLocaleTimeString() });
-                log("Synthesis success.");
+                log("Synthesis complete.");
             } catch (err) {
-                log(`CRITICAL: ${err.message}`);
-                state.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: `Core Error: ${err.message}`, time: new Date().toLocaleTimeString() });
+                log(`ERROR: ${err.message}`);
+                state.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: `Neural Link Failure: ${err.message}`, time: new Date().toLocaleTimeString() });
             } finally {
-                state.isLoading = false;
-                document.getElementById('typing-indicator').classList.add('hidden');
-                renderMessages();
+                state.isLoading = false; document.getElementById('typing-indicator').classList.add('hidden'); renderMessages();
             }
         }
 
         async function runImageGen(prompt, isVideo = false) {
-            state.isLoading = true;
-            document.getElementById('typing-indicator').classList.remove('hidden');
-            renderMessages();
-            log(isVideo ? "Imaging cinematic sequence..." : "Imaging engine warming...");
-            
-            const currentKey = apiKey || state.apiKey || "";
-
+            state.isLoading = true; document.getElementById('typing-indicator').classList.remove('hidden'); renderMessages(); log("Imaging...");
+            const currentKey = apiKeyEnv || state.userApiKey;
             try {
                 const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_IMAGE}:predict?key=${currentKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        instances: { prompt: (isVideo ? "Cinematic high-motion video keyframe: " : "8k detailed high quality: ") + prompt }, 
-                        parameters: { sampleCount: 1 } 
-                    })
+                    body: JSON.stringify({ instances: { prompt: (isVideo ? "Cinematic high-motion keyframe: " : "8k detailed: ") + prompt }, parameters: { sampleCount: 1 } })
                 });
                 const data = await response.json();
-                if(data.error) throw new Error(data.error.message);
                 const b64 = data.predictions?.[0]?.bytesBase64Encoded;
-                if(!b64) throw new Error("Null imaging bytes.");
-                
-                state.messages.push({ 
-                    id: crypto.randomUUID(), 
-                    role: 'assistant', 
-                    text: isVideo ? `Cinematic synthesis for "${prompt}" initialized. Keyframe captured.` : `Image generated for "${prompt}".`, 
-                    image: `data:image/png;base64,${b64}`, 
-                    time: new Date().toLocaleTimeString() 
-                });
-                log("Visual asset synthesized.");
+                if(!b64) throw new Error("Empty image data.");
+                state.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: isVideo ? `Video keyframe generated.` : `Image generated.`, image: `data:image/png;base64,${b64}`, time: new Date().toLocaleTimeString() });
+                log("Visual asset ready.");
             } catch (e) {
-                log(`IMAGE ERROR: ${e.message}`);
+                log(`IMG ERROR: ${e.message}`);
                 state.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: `Image Error: ${e.message}`, time: new Date().toLocaleTimeString() });
             } finally {
-                state.isLoading = false;
-                document.getElementById('typing-indicator').classList.add('hidden');
-                renderMessages();
+                state.isLoading = false; document.getElementById('typing-indicator').classList.add('hidden'); renderMessages();
             }
         }
 
@@ -561,8 +522,7 @@
         async function saveEdit(id) {
             const newText = document.getElementById(`edit-area-${id}`).value;
             const index = state.messages.findIndex(m => m.id === id);
-            state.messages[index].text = newText;
-            state.editingId = null;
+            state.messages[index].text = newText; state.editingId = null;
             if(index + 1 < state.messages.length && state.messages[index+1].role === 'assistant') await runTextGen(newText, state.messages[index].attachedImages || [], state.messages[index+1].id);
             else if(index === state.messages.length - 1) await runTextGen(newText, state.messages[index].attachedImages || []);
             else renderMessages();
@@ -573,9 +533,7 @@
             if(idx > 0 && state.messages[idx-1].role === 'user') runTextGen(state.messages[idx-1].text, state.messages[idx-1].attachedImages || [], id);
         }
 
-        function copyText(t) {
-            const el = document.createElement('textarea'); el.value = t; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); log("Copied.");
-        }
+        function copyText(t) { const el = document.createElement('textarea'); el.value = t; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); log("Copied."); }
 
         function handleFiles(e) {
             const files = Array.from(e.target.files);
@@ -583,8 +541,7 @@
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     const isImage = file.type.startsWith('image/');
-                    state.pendingFiles.push({ name: file.name, isImage, data: ev.target.result });
-                    updatePreviews();
+                    state.pendingFiles.push({ name: file.name, isImage, data: ev.target.result }); updatePreviews();
                 };
                 if(file.type.startsWith('image/')) reader.readAsDataURL(file); else reader.readAsText(file);
             });
@@ -592,7 +549,7 @@
 
         function updatePreviews() {
             const c = document.getElementById('file-previews');
-            c.innerHTML = state.pendingFiles.map((f, i) => `<div class="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-full flex items-center gap-2 border border-indigo-500/20"><span class="max-w-[100px] truncate">${f.name}</span><button onclick="state.pendingFiles.splice(${i},1);updatePreviews()"><i data-lucide="x" class="w-3 h-3"></i></button></div>`).join('');
+            c.innerHTML = state.pendingFiles.map((f, i) => `<div class="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-full flex items-center gap-2 border border-indigo-500/20"><span>${f.name}</span><button onclick="state.pendingFiles.splice(${i},1);updatePreviews()"><i data-lucide="x" class="w-3 h-3"></i></button></div>`).join('');
             lucide.createIcons();
         }
 
@@ -604,25 +561,15 @@
                 document.getElementById('dev-text').innerText = "ADMIN MODE";
                 document.getElementById('dev-icon').setAttribute('data-lucide', 'shield-alert');
                 document.getElementById('dev-status-btn').className = "w-full flex items-center gap-4 p-4 rounded-2xl transition-all border text-emerald-400 bg-emerald-400/5 border-emerald-500/20 shadow-lg";
-                lucide.createIcons(); log("ADMIN ACCESS GRANTED.");
+                lucide.createIcons(); log("ADMIN GRANTED.");
             } else { log("Access denied."); document.getElementById('dev-pass-input').value = ""; }
         }
 
-        function setTone(t) {
-            state.settings.tone = t;
-            document.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('tone-' + t).classList.add('active');
-        }
+        function setTone(t) { state.settings.tone = t; document.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active')); document.getElementById('tone-' + t).classList.add('active'); }
 
-        function exportHistory() {
-            const blob = new Blob([JSON.stringify(state.messages, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `oipoipoi_log.json`; a.click();
-        }
+        function exportHistory() { const blob = new Blob([JSON.stringify(state.messages, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `oipoipoi_log.json`; a.click(); }
 
-        function clearHistory() {
-            state.messages = [{ id: 'i1', role: 'assistant', text: 'System reset.', time: new Date().toLocaleTimeString() }];
-            renderMessages();
-        }
+        function clearHistory() { state.messages = [{ id: 'i1', role: 'assistant', text: 'System reset.', time: new Date().toLocaleTimeString() }]; renderMessages(); }
 
         window.onload = init;
     </script>
