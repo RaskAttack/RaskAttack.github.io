@@ -149,20 +149,21 @@
         }
 
         /* Modal Styles */
-        #modal-overlay {
+        #modal-overlay, #settings-overlay {
             display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.8);
             align-items: center; justify-content: center; z-index: 200; pointer-events: auto;
         }
         .modal {
-            background: #1e293b; padding: 24px; border-radius: 16px; width: 300px;
+            background: #1e293b; padding: 24px; border-radius: 16px; width: 320px;
             border: 1px solid var(--border); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
         }
-        .modal h3 { margin-top: 0; color: white; margin-bottom: 16px; }
-        .modal input { 
+        .modal h3 { margin-top: 0; color: white; margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .modal input[type="text"], .modal input[type="number"] { 
             width: 100%; padding: 10px; margin-bottom: 16px; background: #0f172a; 
             border: 1px solid var(--border); color: white; border-radius: 8px; box-sizing: border-box;
         }
         .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 14px; color: #cbd5e1; }
 
         /* Start Screen for Exported Games */
         #start-screen {
@@ -174,7 +175,8 @@
 
         body.exported #toolbar, 
         body.exported #palette, 
-        body.exported #controls-info { display: none !important; }
+        body.exported #controls-info,
+        body.exported #btn-editor-return { display: none !important; }
     </style>
 </head>
 <body>
@@ -209,7 +211,7 @@
             <button class="btn" onclick="openImport()" title="Import HTML">📥 Import</button>
             <button class="btn" onclick="exportGame()" title="Export HTML">📦 Export</button>
             <button class="btn" onclick="saveProject()">💾 Save</button>
-            <button class="btn dev" onclick="openModal('dev')" title="Enter Code">⚙️</button>
+            <button class="btn" onclick="openSettings()" title="Settings">⚙️</button>
             <div style="width: 1px; height: 20px; background: #334155; margin: 0 5px;"></div>
             <button class="btn primary" id="btn-play" onclick="togglePlayMode()">▶ PLAY</button>
         </div>
@@ -241,7 +243,7 @@
     <!-- Hidden File Input for Import -->
     <input type="file" id="import-file" style="display:none" accept=".html" onchange="handleFileSelect(this)">
 
-    <!-- Custom Modal -->
+    <!-- Input Modal -->
     <div id="modal-overlay">
         <div class="modal">
             <h3 id="modal-title">Input</h3>
@@ -249,6 +251,29 @@
             <div class="modal-buttons">
                 <button class="btn" onclick="closeModal()">Cancel</button>
                 <button class="btn primary" onclick="submitModal()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-overlay">
+        <div class="modal">
+            <h3>Settings</h3>
+            <div class="setting-row">
+                <span>Block Count:</span> <span id="block-count-display">0 / 2000</span>
+            </div>
+            <div class="setting-row">
+                <input type="text" id="dev-code-input" placeholder="Dev Code..." style="margin-bottom:0; width: 60%;">
+                <button class="btn" onclick="checkDevCode()">Unlock</button>
+            </div>
+            <div id="dev-controls" style="display:none; margin-top:15px; border-top:1px solid #334155; padding-top:15px;">
+                <div style="color:var(--dev); font-weight:bold; margin-bottom:10px;">DEV MODE UNLOCKED</div>
+                <label class="checkbox-wrapper">
+                    <input type="checkbox" id="dev-toggle" checked onchange="toggleDevMode(this.checked)"> Enable No Limits
+                </label>
+            </div>
+            <div class="modal-buttons" style="margin-top:20px;">
+                <button class="btn primary" onclick="closeSettings()">Close</button>
             </div>
         </div>
     </div>
@@ -272,11 +297,11 @@
 
 <script>
 /**
- * VOXELVERSE ENGINE v4.4
+ * VOXELVERSE ENGINE v5.1
  * Made by oiPoipoi Games
  */
 
-// --- CONFIG ---
+// --- CONFIG & LIMITS ---
 const CONFIG = {
     cellSize: 1,
     gravity: 40,
@@ -286,6 +311,13 @@ const CONFIG = {
         sky: 0x0f172a,
         grid: 0x1e293b
     }
+};
+
+const LIMITS = {
+    BLOCKS: 2000,
+    LAYER_MAX: 20,
+    LAYER_MIN: -5,
+    SIZE: 50 // World bound X/Z
 };
 
 // --- GLOBAL STATE ---
@@ -406,6 +438,41 @@ function submitModal() {
     closeModal();
 }
 
+// --- SETTINGS MENU ---
+function openSettings() {
+    document.getElementById('settings-overlay').style.display = 'flex';
+    document.getElementById('block-count-display').innerText = `${objects.length} / ${LIMITS.BLOCKS}`;
+    
+    if(devMode) {
+        document.getElementById('dev-controls').style.display = 'block';
+        document.getElementById('dev-code-input').parentElement.style.display = 'none';
+    }
+}
+
+function closeSettings() {
+    document.getElementById('settings-overlay').style.display = 'none';
+}
+
+function checkDevCode() {
+    const val = document.getElementById('dev-code-input').value;
+    if (val === "oiPoipoiDEV") {
+        devMode = true;
+        showToast("Dev Mode Unlocked!");
+        document.getElementById('dev-controls').style.display = 'block';
+        document.getElementById('dev-code-input').parentElement.style.display = 'none';
+        initPalette(); // Refresh for dev tools
+    } else {
+        showToast("Incorrect Code");
+    }
+}
+
+function toggleDevMode(checked) {
+    // If dev mode unlocked, this checkbox toggles "No Limits"
+    devMode = checked;
+    if(devMode) showToast("Limits Disabled");
+    else showToast("Limits Enabled");
+}
+
 // --- TEXTURE GENERATOR ---
 const textureCache = {};
 function getTexture(type, color, text) {
@@ -430,7 +497,6 @@ function getTexture(type, color, text) {
         ctx.font = `bold ${fontSize}px Arial`;
         let textWidth = ctx.measureText(content).width;
         
-        // Simple fitting loop
         while(textWidth > 100 && fontSize > 10) {
             fontSize--;
             ctx.font = `bold ${fontSize}px Arial`;
@@ -440,7 +506,6 @@ function getTexture(type, color, text) {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         
-        // Wrapping
         const words = content.split(' ');
         let lines = [];
         let currentLine = words[0];
@@ -499,11 +564,11 @@ function getTexture(type, color, text) {
     }
     else if (type === 'turret') {
         ctx.fillStyle = "#1e293b";
-        ctx.fillRect(16,16,96,96); // Body
-        ctx.fillStyle = "#ef4444"; // Eye
+        ctx.fillRect(16,16,96,96); 
+        ctx.fillStyle = "#ef4444"; 
         ctx.beginPath(); ctx.arc(64,64,24,0,Math.PI*2); ctx.fill();
         ctx.fillStyle = "rgba(255,255,255,0.8)";
-        ctx.beginPath(); ctx.arc(74,54,6,0,Math.PI*2); ctx.fill(); // Glint
+        ctx.beginPath(); ctx.arc(74,54,6,0,Math.PI*2); ctx.fill(); 
         ctx.strokeStyle = "#475569"; ctx.lineWidth=6;
         ctx.strokeRect(16,16,96,96);
     }
@@ -588,8 +653,13 @@ function initPalette() {
 }
 
 function updateBuildLayer(val) {
+    if(!devMode) {
+        if(val > LIMITS.LAYER_MAX) val = LIMITS.LAYER_MAX;
+        if(val < LIMITS.LAYER_MIN) val = LIMITS.LAYER_MIN;
+    }
     buildLayerY = parseInt(val) || 0;
-    gridHelper.position.y = buildLayerY; // Visual Feedback
+    document.getElementById('layer-input').value = buildLayerY;
+    gridHelper.position.y = buildLayerY; 
 }
 
 function toggleForceLayer(checked) {
@@ -659,6 +729,12 @@ function createMesh(type, x, y, z, text, scaleVal = 1) {
 function addObject(x, y, z, type, text = null) {
     if (type === 'eraser') return; 
 
+    // LIMIT CHECK
+    if (!devMode && objects.length >= LIMITS.BLOCKS) {
+        showToast("Block Limit Reached! (2000)");
+        return;
+    }
+
     const exist = objects.find(o => 
         Math.abs(o.position.x - x) < 0.1 && 
         Math.abs(o.position.y - y) < 0.1 && 
@@ -671,7 +747,6 @@ function addObject(x, y, z, type, text = null) {
         if(oldSpawn) removeObject(oldSpawn);
     }
 
-    // Apply current buildScale
     const mesh = createMesh(type, x, y, z, text, buildScale);
     if(mesh) {
         scene.add(mesh);
@@ -817,14 +892,13 @@ function exportGame() {
         // Don't return, just warn.
     }
 
-    // Use UTF-8 compatible Base64 encoding
     const json = JSON.stringify(project);
     const b64 = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, function(match, p1) { return String.fromCharCode('0x' + p1); }));
     
     const clone = document.documentElement.cloneNode(true);
     clone.querySelector('body').classList.add('exported');
     
-    const toRemove = ['#toolbar', '#palette', '#controls-info', '#modal-overlay'];
+    const toRemove = ['#toolbar', '#palette', '#controls-info', '#modal-overlay', '#import-file', '#settings-overlay'];
     toRemove.forEach(sel => {
         const el = clone.querySelector(sel);
         if(el) el.remove();
@@ -860,18 +934,15 @@ function handleFileSelect(input) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const content = e.target.result;
-        // Regex to find the base64 string variable assignment
         const match = content.match(/const raw = "([^"]+)";/);
         
         if (match && match[1]) {
             try {
-                // Decode UTF-8 compatible Base64
                 const raw = match[1];
                 const json = decodeURIComponent(Array.prototype.map.call(atob(raw), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
                 const importedProject = JSON.parse(json);
                 
                 project = importedProject;
-                // Reset to first level or saved state
                 const startId = project.currentLevelId || project.levels[0].id;
                 loadLevel(startId); 
                 showToast("Game Imported!");
@@ -884,7 +955,6 @@ function handleFileSelect(input) {
         }
     };
     reader.readAsText(file);
-    // Reset input so same file can be selected again
     input.value = '';
 }
 
@@ -998,19 +1068,29 @@ function updateEditor(dt) {
             const y = Math.floor(targetPos.y + 0.01); // Epsilon for float issues
             const z = Math.round(targetPos.z);
             
-            ghostBox.position.set(x, y, z);
-            ghostBox.scale.set(buildScale, buildScale, buildScale);
-            ghostBox.material.color.setHex(0xffffff);
-            ghostBox.visible = true;
+            // Limit Check for Ghost
+            if (!devMode) {
+                if (Math.abs(x) > LIMITS.SIZE || Math.abs(z) > LIMITS.SIZE) valid = false;
+                if (y > LIMITS.LAYER_MAX || y < LIMITS.LAYER_MIN) valid = false;
+            }
 
-            if (input.mouseDown) {
-                if (selectedTool === 'sign') {
-                    pendingPlaceCoords = {x, y, z};
-                    openModal('sign');
-                } else {
-                    addObject(x, y, z, selectedTool);
+            if (valid) {
+                ghostBox.position.set(x, y, z);
+                ghostBox.scale.set(buildScale, buildScale, buildScale);
+                ghostBox.material.color.setHex(0xffffff);
+                ghostBox.visible = true;
+
+                if (input.mouseDown) {
+                    if (selectedTool === 'sign') {
+                        pendingPlaceCoords = {x, y, z};
+                        openModal('sign');
+                    } else {
+                        addObject(x, y, z, selectedTool);
+                    }
+                    input.mouseDown = false; 
                 }
-                input.mouseDown = false; 
+            } else {
+                ghostBox.visible = false;
             }
         } else {
             ghostBox.visible = false;
@@ -1085,28 +1165,42 @@ function updateGame(dt) {
     const subDt = dt / steps;
     
     for(let i=0; i<steps; i++) {
-        let nextPos = player.pos.clone();
-        nextPos.x += player.vel.x * subDt;
-        nextPos.z += player.vel.z * subDt;
-        
-        if(!checkCol(nextPos)) player.pos.x = nextPos.x;
-        if(!checkCol(new THREE.Vector3(player.pos.x, player.pos.y, nextPos.z))) player.pos.z = nextPos.z;
+        // Move X
+        let candidate = player.pos.clone();
+        candidate.x += player.vel.x * subDt;
+        if(!checkCol(candidate)) {
+            player.pos.x = candidate.x;
+        } else {
+            player.vel.x = 0;
+        }
 
-        nextPos = player.pos.clone();
-        nextPos.y += player.vel.y * subDt;
+        // Move Z
+        candidate = player.pos.clone();
+        candidate.z += player.vel.z * subDt;
+        if(!checkCol(candidate)) {
+            player.pos.z = candidate.z;
+        } else {
+            player.vel.z = 0;
+        }
+
+        // Move Y
+        candidate = player.pos.clone();
+        candidate.y += player.vel.y * subDt;
+        const colY = checkCol(candidate);
         
-        const colY = checkCol(nextPos);
         if(!colY) {
-            player.pos.y = nextPos.y;
+            player.pos.y = candidate.y;
             player.onGround = false;
         } else {
-            if(player.vel.y < 0) { 
+            if(player.vel.y < 0) { // Landing
                 player.onGround = true;
-                player.pos.y = Math.ceil(player.pos.y - 0.5) + 0.001; 
+                // Snap to top of box
+                // We need the precise top of the colliding box
+                player.pos.y = colY.box.max.y; 
                 player.vel.y = 0;
                 
-                if (colY.bounce > 0) {
-                    player.vel.y = CONFIG.jumpForce * colY.bounce;
+                if (colY.userData.bounce > 0) {
+                    player.vel.y = CONFIG.jumpForce * colY.userData.bounce;
                     player.onGround = false;
                 }
             } else { 
@@ -1216,8 +1310,8 @@ function checkCol(pos) {
                 return null;
             }
 
-            // Solid
-            return o.userData;
+            // Solid - Return data + BOX for physics resolution
+            return { userData: o.userData, box: box };
         }
     }
     return null;
@@ -1263,6 +1357,11 @@ function togglePlayMode() {
 }
 
 function stopGame() {
+    // If exported, disable exit on win/death via game over screens
+    if(isExported && (document.getElementById('game-over').style.display === 'flex')) {
+        return; // Block exit
+    }
+
     mode = 'edit';
     document.exitPointerLock();
     
@@ -1326,6 +1425,18 @@ function nextLevel() {
 function restartLevel() {
     if (godMode && !gameEnded) return;
     
+    // Auto restart if exported and game over screen hidden or died
+    if (isExported && !gameEnded) {
+        const spawn = objects.find(o => o.userData.type === 'spawn');
+        if(spawn) player.pos.copy(spawn.position);
+        player.vel.set(0,0,0);
+        gameEnded = false;
+        bullets.forEach(b => scene.remove(b.mesh));
+        bullets = [];
+        objects.forEach(o => { if(o.userData.gameType === 'collectible') o.visible = true; });
+        return; // Don't show menu
+    }
+
     const spawn = objects.find(o => o.userData.type === 'spawn');
     if(spawn) player.pos.copy(spawn.position);
     player.vel.set(0,0,0);
