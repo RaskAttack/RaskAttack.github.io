@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoxelVerse - by oiPoipoi Games</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: rgba(15, 23, 42, 0.95);
+            --accent: #38bdf8; /* Cyan for VoxelVerse */
+            --accent-hover: #0ea5e9;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text: #f8fafc;
+            --border: #334155;
+            --dev: #eab308;
+        }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-dark); color: var(--text); user-select: none; }
+        
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; }
+        
+        #toolbar { 
+            pointer-events: auto; 
+            background: var(--panel-bg); 
+            padding: 8px 16px; 
+            display: flex; 
+            gap: 12px; 
+            align-items: center; 
+            border-bottom: 1px solid var(--border);
+            height: 54px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo { 
+            font-weight: 900; font-size: 22px; 
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-right: 10px; letter-spacing: -0.5px; 
+            text-transform: uppercase;
+            text-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);
+        }
+
+        .btn {
+            background: #1e293b; border: 1px solid var(--border); color: var(--text); padding: 8px 16px; 
+            border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;
+            display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .btn:hover { background: #334155; transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+        
+        .btn.primary { background: var(--accent); color: #0f172a; border: none; }
+        .btn.primary:hover { background: var(--accent-hover); box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+        
+        .btn.danger { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border-color: rgba(239, 68, 68, 0.3); }
+        .btn.danger:hover { background: rgba(239, 68, 68, 0.25); }
+        
+        .btn.dev { background: rgba(234, 179, 8, 0.15); color: #fde047; border-color: rgba(234, 179, 8, 0.3); }
+        .btn.dev:hover { background: rgba(234, 179, 8, 0.25); box-shadow: 0 0 10px rgba(234, 179, 8, 0.3); }
+
+        select {
+            background: #1e293b; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 8px; outline: none; cursor: pointer;
+        }
+
+        #palette {
+            pointer-events: auto;
+            position: absolute; left: 16px; top: 80px; bottom: 40px;
+            width: 96px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            display: flex; flex-direction: column; gap: 8px; padding: 12px 8px;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            scrollbar-width: none;
+        }
+
+        .tool-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.03); border: 1px solid transparent;
+            border-radius: 10px; padding: 10px 4px; cursor: pointer; transition: all 0.2s;
+            position: relative;
+        }
+        .tool-item:hover { background: rgba(255,255,255,0.08); }
+        .tool-item.selected { background: rgba(56, 189, 248, 0.15); border-color: var(--accent); }
+        .tool-item.dev-item { border: 1px dashed var(--dev); }
+        
+        .tool-icon { font-size: 26px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        .tool-label { font-size: 11px; color: #94a3b8; text-align: center; font-weight: 600; }
+        .tool-item.selected .tool-label { color: var(--accent); }
+
+        #controls-info {
+            position: absolute; bottom: 20px; right: 20px;
+            background: rgba(15, 23, 42, 0.8); padding: 15px; border-radius: 12px;
+            font-size: 12px; color: #cbd5e1; pointer-events: none;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(4px);
+        }
+        .key { background: #334155; padding: 2px 6px; border-radius: 4px; color: white; font-family: monospace; border-bottom: 2px solid #1e293b; }
+        .row { margin-bottom: 6px; display: flex; justify-content: space-between; width: 220px; }
+
+        #credits {
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+            font-size: 12px; color: rgba(255,255,255,0.3); font-weight: 600; pointer-events: none;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        #play-ui { display: none; position: absolute; top: 20px; left: 50%; transform: translateX(-50%); }
+        .score-pill { 
+            background: rgba(15, 23, 42, 0.8); padding: 10px 24px; border-radius: 30px; 
+            border: 2px solid var(--accent); font-size: 20px; font-weight: bold; 
+            display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.3); color: white;
+        }
+
+        #game-over { 
+            display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.9); 
+            align-items: center; justify-content: center; flex-direction: column; pointer-events: auto; z-index: 100;
+        }
+        #go-title {
+            font-size: 4rem; margin-bottom: 20px; color: white;
+            text-shadow: 0 0 30px var(--accent);
+            font-weight: 900;
+        }
+        
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+            background: white; border-radius: 50%; transform: translate(-50%, -50%);
+            pointer-events: none; mix-blend-mode: difference;
+        }
+
+        #toast {
+            position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+            background: var(--accent); color: #0f172a; padding: 8px 24px; border-radius: 20px;
+            font-weight: 600; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+        
+        #god-mode-indicator {
+            display: none; position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            color: var(--dev); font-weight: bold; font-size: 14px; text-shadow: 0 0 10px var(--dev);
+        }
+
+        /* Modal Styles */
+        #modal-overlay {
+            display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.8);
+            align-items: center; justify-content: center; z-index: 200; pointer-events: auto;
+        }
+        .modal {
+            background: #1e293b; padding: 24px; border-radius: 16px; width: 300px;
+            border: 1px solid var(--border); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+        }
+        .modal h3 { margin-top: 0; color: white; margin-bottom: 16px; }
+        .modal input { 
+            width: 100%; padding: 10px; margin-bottom: 16px; background: #0f172a; 
+            border: 1px solid var(--border); color: white; border-radius: 8px; box-sizing: border-box;
+        }
+        .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+
+        body.exported #toolbar, 
+        body.exported #palette, 
+        body.exported #controls-info { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div id="ui-layer">
+        <div id="toolbar">
+            <div class="logo">VoxelVerse</div>
+            <div style="width: 1px; height: 20px; background: #334155; margin: 0 5px;"></div>
+            <select id="level-select" onchange="switchLevel(this.value)"></select>
+            <button class="btn" onclick="openModal('level')" title="New Level">➕</button>
+            <button class="btn danger" onclick="deleteLevel()" title="Delete Level">🗑️</button>
+            <button class="btn danger" onclick="clearCurrentLevel()" title="Clear All Blocks">🧹</button>
+            <div style="flex-grow: 1;"></div>
+            <button class="btn dev" onclick="openModal('dev')" title="Enter Code">⚙️</button>
+            <button class="btn" onclick="saveProject()">💾 Save</button>
+            <button class="btn" onclick="loadProject()">📂 Load</button>
+            <button class="btn" onclick="exportGame()">📦 Export HTML</button>
+            <div style="width: 1px; height: 20px; background: #334155; margin: 0 5px;"></div>
+            <button class="btn primary" id="btn-play" onclick="togglePlayMode()">▶ PLAY</button>
+        </div>
+
+        <div id="palette"></div>
+
+        <div id="controls-info">
+            <div class="row"><span>Move Cam</span> <span><span class="key">WASD</span></span></div>
+            <div class="row"><span>Look</span> <span><span class="key">R-Click</span> + Drag</span></div>
+            <div class="row"><span>Fly Up</span> <span><span class="key">Space</span></span></div>
+            <div class="row"><span>Place/Delete</span> <span><span class="key">L-Click</span></span></div>
+            <div class="row"><span>Fast Fly</span> <span><span class="key">Shift</span></span></div>
+        </div>
+        
+        <div id="credits">Made by oiPoipoi Games</div>
+
+        <div id="play-ui">
+            <div class="score-pill"><span>🪙</span> <span id="coin-count">0</span></div>
+            <div style="margin-top: 10px; text-align: center; color: rgba(255,255,255,0.6); font-size: 12px; font-weight: 500;">
+                <span class="key" style="background: rgba(255,255,255,0.2);">ESC</span> Pause / <span class="key" style="background: rgba(255,255,255,0.2);">R</span> Restart / <span class="key" style="background: rgba(255,255,255,0.2);">Space</span> Jump
+            </div>
+            <div id="god-mode-indicator">⚡ GOD MODE ACTIVE ⚡</div>
+        </div>
+
+        <div id="crosshair"></div>
+        <div id="toast">Saved!</div>
+    </div>
+
+    <!-- Custom Modal -->
+    <div id="modal-overlay">
+        <div class="modal">
+            <h3 id="modal-title">Input</h3>
+            <input type="text" id="modal-input" placeholder="...">
+            <div class="modal-buttons">
+                <button class="btn" onclick="closeModal()">Cancel</button>
+                <button class="btn primary" onclick="submitModal()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over">
+        <h1 id="go-title">PAUSED</h1>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+            <button class="btn primary" id="btn-resume" onclick="resumeGame()" style="padding: 12px 24px; font-size: 1.2rem;">Resume</button>
+            <button class="btn primary" id="btn-next-level" onclick="nextLevel()" style="display:none; padding: 12px 24px; font-size: 1.2rem;">Next Level ➡</button>
+            <button class="btn" onclick="restartLevel()" style="padding: 12px 24px; font-size: 1.2rem;">Restart (R)</button>
+            <button class="btn danger" id="btn-editor-return" onclick="stopGame()" style="padding: 12px 24px; font-size: 1.2rem;">Quit to Editor</button>
+        </div>
+    </div>
+
+<script>
+/**
+ * VOXELVERSE ENGINE v4.0
+ * Made by oiPoipoi Games
+ */
+
+// --- CONFIG ---
+const CONFIG = {
+    cellSize: 1,
+    gravity: 40,
+    baseMoveSpeed: 10,
+    jumpForce: 14,
+    colors: {
+        sky: 0x0f172a,
+        grid: 0x1e293b
+    }
+};
+
+// --- GLOBAL STATE ---
+let mode = 'edit';
+let project = {
+    levels: [ { id: 'lvl1', name: 'Level 1', objects: [] } ],
+    currentLevelId: 'lvl1'
+};
+let objects = []; // Three.js meshes
+let selectedTool = 'brick';
+let isExported = false;
+let devMode = false;
+let godMode = false;
+let gameEnded = false;
+let bullets = []; 
+let pendingPlaceCoords = null; // For modal flow
+
+// Physics State
+let player = {
+    pos: new THREE.Vector3(0, 5, 0),
+    vel: new THREE.Vector3(),
+    onGround: false,
+    radius: 0.3,
+    height: 1.6,
+    friction: 10,
+    speedMod: 1
+};
+
+// Input State
+const input = { keys: {}, mouse: new THREE.Vector2(), mouseDown: false, rightDown: false };
+
+// --- THREE.JS INIT ---
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(CONFIG.colors.sky);
+scene.fog = new THREE.FogExp2(CONFIG.colors.sky, 0.02);
+
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.rotation.order = 'YXZ'; 
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+// Lights
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+scene.add(hemiLight);
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+dirLight.position.set(15, 30, 15);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.width = 2048;
+dirLight.shadow.mapSize.height = 2048;
+dirLight.shadow.camera.near = 0.5;
+dirLight.shadow.camera.far = 100;
+dirLight.shadow.camera.left = -30;
+dirLight.shadow.camera.right = 30;
+dirLight.shadow.camera.top = 30;
+dirLight.shadow.camera.bottom = -30;
+dirLight.shadow.bias = -0.0005;
+scene.add(dirLight);
+
+const gridHelper = new THREE.GridHelper(100, 100, 0x334155, 0x1e293b);
+scene.add(gridHelper);
+
+// --- MODAL SYSTEM ---
+let activeModalType = null;
+
+function openModal(type) {
+    activeModalType = type;
+    const modal = document.getElementById('modal-overlay');
+    const title = document.getElementById('modal-title');
+    const input = document.getElementById('modal-input');
+    
+    modal.style.display = 'flex';
+    input.value = '';
+    
+    if (type === 'dev') {
+        title.innerText = "Enter Developer Code";
+        input.placeholder = "Code...";
+    } else if (type === 'level') {
+        title.innerText = "New Level Name";
+        input.placeholder = "Level Name...";
+    } else if (type === 'sign') {
+        title.innerText = "Enter Sign Text";
+        input.placeholder = "Your text here...";
+    }
+    input.focus();
+}
+
+function closeModal() {
+    document.getElementById('modal-overlay').style.display = 'none';
+    activeModalType = null;
+    pendingPlaceCoords = null;
+}
+
+function submitModal() {
+    const val = document.getElementById('modal-input').value;
+    if (activeModalType === 'dev') {
+        if (val === "oiPoipoiDEV") {
+            devMode = true;
+            showToast("Dev Mode Unlocked!");
+            initPalette();
+        } else {
+            showToast("Incorrect Code");
+        }
+    } else if (activeModalType === 'level') {
+        if (val) performAddLevel(val);
+    } else if (activeModalType === 'sign') {
+        if (val && pendingPlaceCoords) {
+            addObject(pendingPlaceCoords.x, pendingPlaceCoords.y, pendingPlaceCoords.z, 'sign', val);
+        }
+    }
+    closeModal();
+}
+
+// --- TEXTURE GENERATOR ---
+const textureCache = {};
+function getTexture(type, color, text) {
+    const key = type + color + (text || '');
+    if(textureCache[key]) return textureCache[key];
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 128; canvas.height = 128; 
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = color;
+    ctx.fillRect(0,0,128,128);
+
+    if (type === 'sign') {
+        ctx.fillStyle = "#e2e8f0";
+        ctx.fillRect(10,10,108,108); 
+        ctx.fillStyle = "#334155";
+        ctx.font = "bold 20px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text || "Sign", 64, 64);
+        ctx.strokeStyle = "#475569";
+        ctx.lineWidth = 5;
+        ctx.strokeRect(10,10,108,108);
+    }
+    else if (type === 'brick' || type === 'wood') {
+        ctx.strokeStyle = "rgba(0,0,0,0.2)";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(0,0,128,128);
+        ctx.beginPath(); ctx.moveTo(0,64); ctx.lineTo(128,64); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(64,0); ctx.lineTo(64,64); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(64,64); ctx.lineTo(64,128); ctx.stroke(); 
+        addNoise(ctx, 0.05);
+    } 
+    else if (type === 'grass') {
+        ctx.fillStyle = "rgba(255,255,255,0.1)";
+        for(let i=0; i<100; i++) ctx.fillRect(Math.random()*128,Math.random()*128, 4, 6);
+        addNoise(ctx, 0.1);
+    }
+    else if (type === 'hazard') {
+        ctx.fillStyle = "#fbbf24"; 
+        for(let i=-128; i<128; i+=32) {
+            ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i+16,0); ctx.lineTo(i+144,128); ctx.lineTo(i+128,128); ctx.fill();
+        }
+    }
+    else if (type === 'bounce') {
+        ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.lineWidth=8;
+        ctx.beginPath(); ctx.arc(64,64,32,0,Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(64,64,16,0,Math.PI*2); ctx.stroke();
+    }
+    else if (type === 'speed') {
+        ctx.fillStyle = "rgba(255,255,255,0.3)";
+        ctx.beginPath(); ctx.moveTo(20,128); ctx.lineTo(64,0); ctx.lineTo(108,128); ctx.fill();
+    }
+    else if (type === 'turret') {
+        ctx.fillStyle = "#1e293b";
+        ctx.fillRect(16,16,96,96); // Body
+        ctx.fillStyle = "#ef4444"; // Eye
+        ctx.beginPath(); ctx.arc(64,64,24,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.8)";
+        ctx.beginPath(); ctx.arc(74,54,6,0,Math.PI*2); ctx.fill(); // Glint
+        ctx.strokeStyle = "#475569"; ctx.lineWidth=6;
+        ctx.strokeRect(16,16,96,96);
+    }
+    else if (type === 'teleport') {
+        ctx.fillStyle = "#1e1b4b"; ctx.fillRect(0,0,128,128);
+        ctx.strokeStyle = "#c084fc"; ctx.lineWidth=4;
+        for(let i=1; i<8; i++) {
+            ctx.beginPath(); ctx.arc(64,64, i*8, i*0.5, Math.PI+i*0.5); ctx.stroke();
+        }
+    }
+    else if (type === 'ice') {
+        ctx.fillStyle = "rgba(255,255,255,0.3)";
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(60,128); ctx.lineTo(128,0); ctx.fill();
+    }
+    else if (type === 'mud') {
+        addNoise(ctx, 0.4);
+    }
+    else if (type === 'goal') {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0,0,64,64); ctx.fillRect(64,64,64,64);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(64,0,64,64); ctx.fillRect(0,64,64,64);
+    }
+    else if (type === 'spawn') {
+        ctx.fillStyle = "#334155"; ctx.fillRect(0,0,128,128);
+        ctx.strokeStyle = "#38bdf8"; ctx.lineWidth=6;
+        ctx.beginPath(); ctx.arc(64,64,40,0,Math.PI*2); ctx.stroke();
+        ctx.fillStyle = "#38bdf8"; ctx.font="60px Arial"; ctx.textAlign="center"; ctx.fillText("H", 64, 84);
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.magFilter = THREE.NearestFilter;
+    textureCache[key] = tex;
+    return tex;
+}
+
+function addNoise(ctx, alpha) {
+    ctx.fillStyle = `rgba(0,0,0,${alpha})`;
+    for(let i=0; i<300; i++) ctx.fillRect(Math.random()*128, Math.random()*128, 2, 2);
+}
+
+// --- TOOLS & PALETTE ---
+let TOOLS = {
+    'eraser':{ name: 'Eraser', type: 'tool', color: '#ef4444', icon: '❌', isEraser: true },
+    'sign':  { name: 'Sign', type: 'solid', color: '#64748b', tex: 'sign', icon: '🪧', shape: 'sign' },
+    'brick': { name: 'Brick', type: 'solid', color: '#8d6e63', tex: 'brick', icon: '🧱' },
+    'grass': { name: 'Grass', type: 'solid', color: '#4ade80', tex: 'grass', icon: '🌿' },
+    'wood':  { name: 'Wood',  type: 'solid', color: '#d7ccc8', tex: 'wood', icon: '🪵' },
+    'ice':   { name: 'Ice',   type: 'solid', color: '#cffafe', tex: 'ice', icon: '❄️', friction: 1.0 },
+    'mud':   { name: 'Mud',   type: 'solid', color: '#5D4037', tex: 'mud', icon: '💩', speed: 0.4 },
+    'lava':  { name: 'Lava',  type: 'hazard', color: '#ef4444', tex: 'hazard', icon: '🔥', emissive: 0xaa0000 },
+    'bounce':{ name: 'Jump Pad', type: 'solid', color: '#d946ef', tex: 'bounce', icon: '⏫', bounce: 1.8 },
+    'coin':  { name: 'Coin',  type: 'collectible', color: '#fbbf24', icon: '🪙', shape: 'coin' },
+    'spawn': { name: 'Start', type: 'spawn', color: '#ffffff', tex: 'spawn', icon: '🏁', opacity: 1.0, shape: 'cylinder' },
+    'goal':  { name: 'Finish', type: 'goal', color: '#3b82f6', tex: 'goal', icon: '🏆' }
+};
+
+const DEV_TOOLS = {
+    'turret': { name: 'Turret', type: 'hazard', color: '#334155', tex: 'turret', icon: '🔫', isTurret: true },
+    'tp':     { name: 'Teleport', type: 'trigger', color: '#312e81', tex: 'teleport', icon: '🌀', isTP: true },
+    'speed':  { name: 'Speed Pad', type: 'solid', color: '#f59e0b', tex: 'speed', icon: '⚡', speed: 2.5 }
+};
+
+function initPalette() {
+    const p = document.getElementById('palette');
+    if (!p) return; // Guard for export mode
+    p.innerHTML = '';
+    
+    const activeTools = { ...TOOLS, ...(devMode ? DEV_TOOLS : {}) };
+
+    Object.entries(activeTools).forEach(([key, tool]) => {
+        const el = document.createElement('div');
+        el.className = `tool-item ${selectedTool === key ? 'selected' : ''} ${devMode && DEV_TOOLS[key] ? 'dev-item' : ''}`;
+        el.onclick = () => {
+            selectedTool = key;
+            document.querySelectorAll('.tool-item').forEach(e => e.classList.remove('selected'));
+            el.classList.add('selected');
+        };
+        el.innerHTML = `<div class="tool-icon">${tool.icon}</div><div class="tool-label">${tool.name}</div>`;
+        p.appendChild(el);
+    });
+}
+
+// --- OBJECT MANAGEMENT ---
+
+function createMesh(type, x, y, z, text) {
+    if (!TOOLS[type] && !DEV_TOOLS[type]) return null;
+    
+    const data = { ...TOOLS[type], ...DEV_TOOLS[type] }; 
+    let geo, mat;
+
+    if (data.shape === 'coin') {
+        geo = new THREE.CylinderGeometry(0.3, 0.3, 0.05, 16);
+        geo.rotateX(Math.PI/2);
+    } else if (data.shape === 'cylinder') {
+        geo = new THREE.CylinderGeometry(0.4, 0.4, 0.2, 16);
+        geo.translate(0, 0.1, 0); // Flat pad
+    } else if (data.shape === 'sign') {
+        geo = new THREE.BoxGeometry(0.8, 0.8, 0.1);
+        geo.translate(0, 0.5, 0);
+    } else {
+        geo = new THREE.BoxGeometry(1, 1, 1);
+        geo.translate(0, 0.5, 0);
+    }
+
+    const matProps = { color: data.color };
+    if (data.tex) matProps.map = getTexture(data.tex, data.color, text); 
+    if (data.opacity) { matProps.transparent = true; matProps.opacity = data.opacity; }
+    if (data.emissive) { matProps.emissive = data.emissive; matProps.emissiveIntensity = 0.5; }
+    
+    mat = new THREE.MeshStandardMaterial(matProps);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(x, y, z);
+    
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    
+    mesh.userData = { 
+        type: type, 
+        gameType: data.type, 
+        bounce: data.bounce || 0,
+        friction: data.friction !== undefined ? data.friction : 10,
+        speed: data.speed !== undefined ? data.speed : 1,
+        isTurret: data.isTurret,
+        isTP: data.isTP,
+        lastFire: 0,
+        text: text
+    };
+    
+    mesh.scale.set(0,0,0);
+    new TWEEN(mesh.scale).to({x:1, y:1, z:1}, 400).easing(easingElastic).start();
+
+    return mesh;
+}
+
+function addObject(x, y, z, type, text = null) {
+    if (type === 'eraser') return; 
+
+    const exist = objects.find(o => 
+        Math.abs(o.position.x - x) < 0.1 && 
+        Math.abs(o.position.y - y) < 0.1 && 
+        Math.abs(o.position.z - z) < 0.1
+    );
+    if (exist) return;
+
+    if (type === 'spawn') {
+        const oldSpawn = objects.find(o => o.userData.type === 'spawn');
+        if(oldSpawn) removeObject(oldSpawn);
+    }
+
+    const mesh = createMesh(type, x, y, z, text);
+    if(mesh) {
+        scene.add(mesh);
+        objects.push(mesh);
+    }
+}
+
+function removeObject(obj) {
+    scene.remove(obj);
+    objects = objects.filter(o => o !== obj);
+}
+
+function clearCurrentLevel() {
+    if(!confirm("Are you sure you want to clear this level?")) return;
+    objects.forEach(o => scene.remove(o));
+    objects = [];
+    addObject(0, 0, 0, 'grass');
+    addObject(0, 1, 0, 'spawn');
+}
+
+// --- LEVEL SYSTEM ---
+
+function getLevelList() {
+    const sel = document.getElementById('level-select');
+    if (!sel) return; 
+    sel.innerHTML = '';
+    project.levels.forEach((lvl, idx) => {
+        const opt = document.createElement('option');
+        opt.value = lvl.id;
+        opt.innerText = lvl.name;
+        if(lvl.id === project.currentLevelId) opt.selected = true;
+        sel.appendChild(opt);
+    });
+}
+
+function saveCurrentLevelState() {
+    const lvl = project.levels.find(l => l.id === project.currentLevelId);
+    if(!lvl) return; 
+    
+    lvl.objects = objects.map(o => ({
+        type: o.userData.type,
+        x: o.position.x,
+        y: o.position.y,
+        z: o.position.z,
+        text: o.userData.text 
+    }));
+}
+
+function loadLevel(id, skipSave = false) {
+    if(mode === 'edit' && !skipSave && project.levels.find(l => l.id === project.currentLevelId)) {
+        saveCurrentLevelState();
+    }
+    
+    objects.forEach(o => scene.remove(o));
+    objects = [];
+
+    const lvl = project.levels.find(l => l.id === id);
+    if(!lvl) return;
+
+    project.currentLevelId = id;
+    
+    lvl.objects.forEach(data => {
+        addObject(data.x, data.y, data.z, data.type, data.text);
+    });
+    
+    getLevelList();
+}
+
+function performAddLevel(name) {
+    saveCurrentLevelState();
+    const id = 'lvl_' + Date.now();
+    project.levels.push({ id: id, name: name, objects: [] });
+    loadLevel(id);
+    addObject(0,0,0,'grass');
+    addObject(0,1,0,'spawn');
+}
+
+function deleteLevel() {
+    if(project.levels.length <= 1) { alert("Cannot delete the last level!"); return; }
+    if(!confirm("Delete this level?")) return;
+    
+    const idx = project.levels.findIndex(l => l.id === project.currentLevelId);
+    project.levels.splice(idx, 1);
+    
+    const newId = project.levels[0].id;
+    project.currentLevelId = newId; 
+    objects = []; // Important: Clear objects so we don't save old state to new ID
+    loadLevel(newId, true); 
+}
+
+function switchLevel(id) {
+    loadLevel(id);
+}
+
+// --- EXPORT & SAVE ---
+
+function saveProject() {
+    saveCurrentLevelState();
+    const saveState = { project, devMode };
+    localStorage.setItem('voxelverse_project', JSON.stringify(saveState));
+    showToast("Project Saved!");
+}
+
+function loadProject() {
+    const raw = localStorage.getItem('voxelverse_project');
+    if(!raw) { showToast("No saved project found."); return; }
+    const data = JSON.parse(raw);
+    
+    if (data.project) {
+        project = data.project;
+        devMode = data.devMode || false;
+    } else {
+        project = data; 
+    }
+    
+    if (devMode) initPalette();
+    loadLevel(project.levels[0].id);
+    showToast("Project Loaded!");
+}
+
+function exportGame() {
+    saveCurrentLevelState();
+    
+    // Check if CURRENT level has a spawn point first
+    const currentLvl = project.levels.find(l => l.id === project.currentLevelId);
+    if (!currentLvl.objects.some(o => o.type === 'spawn')) {
+        alert(`Warning: Current level (${currentLvl.name}) has no 'Start' point.`);
+        // Don't return, just warn.
+    }
+
+    const json = JSON.stringify(project);
+    const b64 = btoa(unescape(encodeURIComponent(json)));
+    
+    const clone = document.documentElement.cloneNode(true);
+    clone.querySelector('body').classList.add('exported');
+    
+    const toRemove = ['#toolbar', '#palette', '#controls-info', '#modal-overlay'];
+    toRemove.forEach(sel => {
+        const el = clone.querySelector(sel);
+        if(el) el.remove();
+    });
+
+    const script = document.createElement('script');
+    script.textContent = `
+        window.IS_EXPORTED_GAME = true;
+        const raw = "${b64}";
+        window.EXPORTED_PROJECT = JSON.parse(decodeURIComponent(escape(atob(raw))));
+    `;
+    clone.querySelector('head').insertBefore(script, clone.querySelector('head').firstChild);
+
+    const html = clone.outerHTML;
+    const blob = new Blob([html], {type: 'text/html'});
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'index.html'; 
+    a.click();
+    showToast("Exported index.html!");
+}
+
+// --- DEMO LEVELS ---
+function createDemoLevels() {
+    const tutorial = {
+        id: 'lvl1', name: 'Tutorial',
+        objects: [
+            {x:0,y:0,z:0,type:'grass'}, {x:0,y:0,z:0,type:'spawn'}, // fixed spawn height
+            {x:0,y:1,z:2,type:'sign', text:"WASD Move"},
+            {x:0,y:0,z:-1,type:'grass'}, {x:0,y:0,z:-2,type:'grass'},
+            {x:0,y:0,z:-3,type:'brick'}, {x:0,y:1,z:-3,type:'brick'},
+            {x:-2,y:1,z:-3,type:'sign', text:"Space Jump"},
+            {x:0,y:0,z:-4,type:'grass'}, {x:0,y:0,z:-5,type:'grass'},
+            {x:0,y:0,z:-6,type:'bounce'},
+            {x:2,y:1,z:-6,type:'sign', text:"Jump Pad"},
+            {x:0,y:3,z:-8,type:'brick'}, {x:0,y:3,z:-9,type:'brick'},
+            {x:0,y:3,z:-10,type:'goal'}
+        ]
+    };
+    
+    const parkour = {
+        id: 'lvl2', name: 'Parkour',
+        objects: [
+            {x:0,y:0,z:0,type:'wood'}, {x:0,y:0,z:0,type:'spawn'},
+            {x:0,y:0,z:-3,type:'wood'}, {x:0,y:1,z:-6,type:'wood'},
+            {x:0,y:2,z:-9,type:'wood'}, {x:0,y:3,z:-12,type:'wood'},
+            {x:2,y:4,z:-12,type:'ice'}, {x:4,y:4,z:-12,type:'ice'},
+            {x:6,y:5,z:-12,type:'goal'}
+        ]
+    };
+
+    project.levels = [tutorial, parkour];
+    project.currentLevelId = 'lvl1';
+    loadLevel('lvl1', true);
+}
+
+// --- GAME LOOP & LOGIC ---
+
+const ghostBox = new THREE.Mesh(
+    new THREE.BoxGeometry(1,1,1).translate(0,0.5,0),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, wireframe: true })
+);
+scene.add(ghostBox);
+
+function updateEditor(dt) {
+    const speed = input.keys['ShiftLeft'] ? 20 : 10;
+    
+    if (input.rightDown) {
+        const sensitivity = 0.003;
+        // Rotation handled in mousemove
+    }
+
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+
+    if (input.keys['KeyW']) camera.position.add(forward.multiplyScalar(speed * dt));
+    if (input.keys['KeyS']) camera.position.add(forward.multiplyScalar(-speed * dt));
+    if (input.keys['KeyA']) camera.position.add(right.multiplyScalar(-speed * dt));
+    if (input.keys['KeyD']) camera.position.add(right.multiplyScalar(speed * dt));
+    
+    if (input.keys['Space']) camera.position.y += speed * dt;
+    if (input.keys['KeyC']) camera.position.y -= speed * dt;
+
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(input.mouse, camera);
+    const intersects = ray.intersectObjects(objects);
+    
+    if (selectedTool === 'eraser') {
+        if (intersects.length > 0) {
+            const hitObj = intersects[0].object;
+            ghostBox.position.copy(hitObj.position);
+            ghostBox.scale.set(1.05, 1.05, 1.05); 
+            ghostBox.material.color.setHex(0xff0000);
+            ghostBox.visible = true;
+            
+            if (input.mouseDown) {
+                removeObject(hitObj);
+                input.mouseDown = false;
+            }
+        } else {
+            ghostBox.visible = false;
+        }
+    } else {
+        let targetPos = new THREE.Vector3();
+        if (intersects.length > 0) {
+            const hit = intersects[0];
+            targetPos.copy(hit.point).add(hit.face.normal.multiplyScalar(0.5));
+        } else {
+            const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
+            ray.ray.intersectPlane(plane, targetPos);
+        }
+
+        const x = Math.round(targetPos.x);
+        const y = Math.max(0, Math.floor(targetPos.y)); 
+        const z = Math.round(targetPos.z);
+        
+        ghostBox.position.set(x, y, z);
+        ghostBox.scale.set(1, 1, 1);
+        ghostBox.material.color.setHex(0xffffff);
+        ghostBox.visible = true;
+
+        if (input.mouseDown) {
+            if (selectedTool === 'sign') {
+                pendingPlaceCoords = {x, y, z};
+                openModal('sign');
+            } else {
+                addObject(x, y, z, selectedTool);
+            }
+            input.mouseDown = false; 
+        }
+    }
+}
+
+function updateGame(dt) {
+    if (gameEnded) {
+        player.vel.set(0, 0.5, 0); 
+        player.pos.addScaledVector(player.vel, dt);
+        camera.position.copy(player.pos);
+        return; 
+    }
+
+    if (input.keys['KeyG'] && devMode) {
+        godMode = !godMode;
+        input.keys['KeyG'] = false; 
+        document.getElementById('god-mode-indicator').style.display = godMode ? 'block' : 'none';
+        showToast(godMode ? "God Mode ON" : "God Mode OFF");
+    }
+
+    const rayDown = new THREE.Raycaster(player.pos, new THREE.Vector3(0,-1,0), 0, 1.5);
+    const floorHits = rayDown.intersectObjects(objects);
+    
+    if (floorHits.length > 0 && player.onGround) {
+        const floorObj = floorHits[0].object;
+        player.friction = floorObj.userData.friction;
+        player.speedMod = floorObj.userData.speed;
+        
+        if (floorObj.userData.isTP) {
+            const targets = objects.filter(o => o.userData.isTP && o !== floorObj);
+            if (targets.length > 0) {
+                const target = targets[Math.floor(Math.random() * targets.length)];
+                player.pos.copy(target.position).add(new THREE.Vector3(0, 2, 0));
+                player.vel.set(0,0,0);
+                showToast("Warped!");
+            }
+        }
+    } else {
+        player.friction = 2; 
+        player.speedMod = 1;
+    }
+
+    player.vel.y -= CONFIG.gravity * dt;
+    
+    const fwd = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+    fwd.y = 0; fwd.normalize();
+    const right = new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
+    right.y = 0; right.normalize();
+    
+    const move = new THREE.Vector3();
+    if(input.keys['KeyW']) move.add(fwd);
+    if(input.keys['KeyS']) move.sub(fwd);
+    if(input.keys['KeyA']) move.sub(right);
+    if(input.keys['KeyD']) move.add(right);
+    if(move.length() > 0) move.normalize();
+
+    const targetSpeed = CONFIG.baseMoveSpeed * player.speedMod;
+    const targetVelX = move.x * targetSpeed;
+    const targetVelZ = move.z * targetSpeed;
+    
+    const damping = player.friction * 5; 
+    player.vel.x += (targetVelX - player.vel.x) * damping * dt;
+    player.vel.z += (targetVelZ - player.vel.z) * damping * dt;
+
+    const steps = 5; 
+    const subDt = dt / steps;
+    
+    for(let i=0; i<steps; i++) {
+        let nextPos = player.pos.clone();
+        nextPos.x += player.vel.x * subDt;
+        nextPos.z += player.vel.z * subDt;
+        
+        if(!checkCol(nextPos)) player.pos.x = nextPos.x;
+        if(!checkCol(new THREE.Vector3(player.pos.x, player.pos.y, nextPos.z))) player.pos.z = nextPos.z;
+
+        nextPos = player.pos.clone();
+        nextPos.y += player.vel.y * subDt;
+        
+        const colY = checkCol(nextPos);
+        if(!colY) {
+            player.pos.y = nextPos.y;
+            player.onGround = false;
+        } else {
+            if(player.vel.y < 0) { 
+                player.onGround = true;
+                player.pos.y = Math.ceil(player.pos.y - 0.5) + 0.001; 
+                player.vel.y = 0;
+                
+                if (colY.bounce > 0) {
+                    player.vel.y = CONFIG.jumpForce * colY.bounce;
+                    player.onGround = false;
+                }
+            } else { 
+                player.vel.y = 0;
+            }
+        }
+    }
+
+    const groundCheck = checkCol(player.pos.clone().sub(new THREE.Vector3(0, 0.05, 0)));
+    const canJump = player.onGround || (groundCheck !== null);
+
+    if (input.keys['Space'] && canJump) {
+        player.vel.y = CONFIG.jumpForce;
+        player.onGround = false;
+    }
+    
+    if (input.keys['KeyR']) restartLevel();
+
+    if (player.pos.y < -10) restartLevel();
+
+    camera.position.copy(player.pos);
+    camera.position.y += 1.5; 
+
+    const now = performance.now();
+    objects.forEach(o => {
+        if(o.userData.gameType === 'collectible') o.rotation.y += 3 * dt;
+        
+        if (o.userData.isTurret) {
+            o.lookAt(player.pos);
+            const dist = player.pos.distanceTo(o.position);
+            if (dist < 20 && now - o.userData.lastFire > 2000) {
+                o.userData.lastFire = now;
+                const bulletDir = new THREE.Vector3().subVectors(player.pos, o.position).normalize();
+                spawnBullet(o.position.clone().add(bulletDir), bulletDir);
+            }
+        }
+    });
+    
+    updateBullets(dt);
+}
+
+function spawnBullet(pos, dir) {
+    const geo = new THREE.SphereGeometry(0.2, 8, 8);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xff00ff });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.copy(pos);
+    scene.add(mesh);
+    bullets.push({ mesh, dir, life: 3 });
+}
+
+function updateBullets(dt) {
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.life -= dt;
+        b.mesh.position.addScaledVector(b.dir, 15 * dt);
+        
+        if (b.mesh.position.distanceTo(player.pos) < 0.8) {
+            if (!godMode) restartLevel();
+            scene.remove(b.mesh);
+            bullets.splice(i, 1);
+            continue;
+        }
+        
+        if (checkCol(b.mesh.position) || b.life <= 0) {
+            scene.remove(b.mesh);
+            bullets.splice(i, 1);
+        }
+    }
+}
+
+function checkCol(pos) {
+    const r = player.radius;
+    const minX = pos.x - r, maxX = pos.x + r;
+    const minY = pos.y, maxY = pos.y + player.height;
+    const minZ = pos.z - r, maxZ = pos.z + r;
+
+    for(let o of objects) {
+        if (!o.visible || o.userData.gameType === 'spawn') continue;
+        
+        const ox = o.position.x, oy = o.position.y, oz = o.position.z;
+        
+        if (o.userData.gameType === 'collectible' || o.userData.gameType === 'goal') {
+             const dist = pos.distanceTo(o.position);
+             if (dist < 1.0) {
+                 if(o.userData.gameType === 'collectible') {
+                     o.visible = false;
+                     score++;
+                     document.getElementById('coin-count').innerText = score;
+                 } else if (o.userData.gameType === 'goal') {
+                     winLevel();
+                 }
+             }
+             continue; 
+        }
+
+        if (o.userData.gameType === 'hazard') {
+             if (maxX > ox-0.5 && minX < ox+0.5 && maxY > oy && minY < oy+0.8 && maxZ > oz-0.5 && minZ < oz+0.5) {
+                 if (!godMode) restartLevel();
+             }
+        }
+
+        if (maxX > ox-0.5 && minX < ox+0.5 && 
+            maxY > oy     && minY < oy+1   && 
+            maxZ > oz-0.5 && minZ < oz+0.5) {
+            
+            return o.userData; 
+        }
+    }
+    return null;
+}
+
+// --- STATE MANAGEMENT ---
+
+function togglePlayMode() {
+    if (mode === 'edit') {
+        const spawn = objects.find(o => o.userData.type === 'spawn');
+        if (!spawn) { alert("Place a 'Start' point first!"); return; }
+        
+        saveCurrentLevelState(); 
+        player.pos.copy(spawn.position);
+        player.vel.set(0,0,0);
+        player.onGround = false;
+        score = 0;
+        gameEnded = false;
+        document.getElementById('coin-count').innerText = 0;
+        bullets.forEach(b => scene.remove(b.mesh));
+        bullets = [];
+        
+        objects.forEach(o => {
+            if(o.userData.gameType === 'collectible') o.visible = true;
+        });
+
+        mode = 'play';
+        document.body.requestPointerLock();
+        
+        // Hide UI via Style
+        document.getElementById('toolbar').style.display = 'none';
+        document.getElementById('palette').style.display = 'none';
+        document.getElementById('play-ui').style.display = 'block';
+        document.getElementById('crosshair').style.display = 'block';
+        document.getElementById('controls-info').style.display = 'none';
+        document.getElementById('credits').style.display = 'none';
+        gridHelper.visible = false;
+        ghostBox.visible = false;
+
+    } else {
+        stopGame();
+    }
+}
+
+function stopGame() {
+    mode = 'edit';
+    document.exitPointerLock();
+    
+    camera.position.set(0, 10, 10);
+    camera.lookAt(0,0,0);
+    camera.rotation.set(-0.5, 0, 0); 
+    
+    if(!isExported) {
+        document.getElementById('toolbar').style.display = 'flex';
+        document.getElementById('palette').style.display = 'flex';
+        document.getElementById('controls-info').style.display = 'block';
+        document.getElementById('credits').style.display = 'block';
+    }
+    document.getElementById('play-ui').style.display = 'none';
+    document.getElementById('crosshair').style.display = 'none';
+    document.getElementById('game-over').style.display = 'none';
+    gridHelper.visible = true;
+    ghostBox.visible = true;
+    bullets.forEach(b => scene.remove(b.mesh));
+    bullets = [];
+}
+
+function showPauseMenu() {
+    if(gameEnded) return;
+    document.getElementById('go-title').innerText = "PAUSED";
+    document.getElementById('btn-next-level').style.display = 'none';
+    document.getElementById('btn-resume').style.display = 'inline-block';
+    document.getElementById('game-over').style.display = 'flex';
+}
+
+function resumeGame() {
+    document.getElementById('game-over').style.display = 'none';
+    document.body.requestPointerLock();
+}
+
+function winLevel() {
+    gameEnded = true;
+    document.exitPointerLock();
+    
+    const currIdx = project.levels.findIndex(l => l.id === project.currentLevelId);
+    const hasNext = currIdx !== -1 && currIdx < project.levels.length - 1;
+
+    document.getElementById('go-title').innerText = hasNext ? "LEVEL COMPLETE" : "GAME COMPLETE";
+    
+    document.getElementById('btn-resume').style.display = 'none';
+    document.getElementById('btn-next-level').style.display = hasNext ? 'inline-block' : 'none';
+    document.getElementById('game-over').style.display = 'flex';
+}
+
+function nextLevel() {
+    const currIdx = project.levels.findIndex(l => l.id === project.currentLevelId);
+    if(currIdx !== -1 && currIdx < project.levels.length - 1) {
+        const nextId = project.levels[currIdx + 1].id;
+        loadLevel(nextId);
+        
+        document.getElementById('game-over').style.display = 'none';
+        togglePlayMode();
+    }
+}
+
+function restartLevel() {
+    if (godMode && !gameEnded) return;
+    
+    const spawn = objects.find(o => o.userData.type === 'spawn');
+    if(spawn) player.pos.copy(spawn.position);
+    player.vel.set(0,0,0);
+    gameEnded = false;
+    bullets.forEach(b => scene.remove(b.mesh));
+    bullets = [];
+    objects.forEach(o => { if(o.userData.gameType === 'collectible') o.visible = true; });
+    
+    if (document.getElementById('game-over').style.display === 'none') {
+    } else {
+        document.getElementById('game-over').style.display = 'none';
+        document.body.requestPointerLock();
+    }
+}
+
+// --- EVENTS ---
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+window.addEventListener('keydown', e => input.keys[e.code] = true);
+window.addEventListener('keyup', e => input.keys[e.code] = false);
+
+window.addEventListener('mousedown', e => {
+    if(e.target !== renderer.domElement) return;
+
+    if(e.button === 0) input.mouseDown = true;
+    if(e.button === 2) {
+        input.rightDown = true;
+        if(mode === 'edit') document.body.style.cursor = 'grabbing';
+    }
+});
+window.addEventListener('mouseup', e => {
+    if(e.button === 0) input.mouseDown = false;
+    if(e.button === 2) {
+        input.rightDown = false;
+        if(mode === 'edit') document.body.style.cursor = 'default';
+    }
+});
+
+document.addEventListener('pointerlockchange', () => {
+    if(document.pointerLockElement !== document.body && mode === 'play') {
+        if(document.getElementById('game-over').style.display === 'none') {
+            showPauseMenu();
+        }
+    }
+});
+
+window.addEventListener('contextmenu', e => e.preventDefault());
+
+window.addEventListener('mousemove', e => {
+    input.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    input.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    // EDITOR: Always rotate if Right Click is held
+    if (mode === 'edit' && input.rightDown) {
+        const sensitivity = 0.003;
+        camera.rotation.y -= e.movementX * sensitivity;
+        camera.rotation.x -= e.movementY * sensitivity;
+        camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+    }
+
+    if (mode === 'play' && document.pointerLockElement === document.body) {
+        const sensitivity = 0.002;
+        camera.rotation.y -= e.movementX * sensitivity;
+        camera.rotation.x -= e.movementY * sensitivity;
+        camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+    }
+});
+
+// --- HELPER UTILS ---
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.style.opacity = 1;
+    setTimeout(() => t.style.opacity = 0, 2000);
+}
+
+const easingElastic = t => {
+    const c4 = (2 * Math.PI) / 3;
+    return t === 0 ? 0 : t === 1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4);
+};
+
+const TWEEN_REGISTRY = [];
+class TWEEN {
+    constructor(target) { this.target = target; this.toVals = {}; this.duration = 1000; this.startTime = 0; this.started = false; this.startVals = {}; this.easingFn = t => t; }
+    to(vals, dur) { this.toVals = vals; this.duration = dur; return this; }
+    easing(fn) { this.easingFn = fn; return this; }
+    start() { 
+        this.startTime = performance.now(); 
+        this.started = true;
+        for(let k in this.toVals) this.startVals[k] = this.target[k];
+        TWEEN_REGISTRY.push(this);
+    }
+    update(t) {
+        const progress = Math.min(1, (t - this.startTime) / this.duration);
+        const eased = this.easingFn(progress);
+        for(let k in this.toVals) {
+            this.target[k] = this.startVals[k] + (this.toVals[k] - this.startVals[k]) * eased;
+        }
+        return progress >= 1;
+    }
+}
+
+// --- BOOTSTRAP ---
+function init() {
+    initPalette();
+    camera.rotation.order = 'YXZ'; 
+    camera.position.set(0, 8, 10);
+    camera.rotation.set(-0.5, 0, 0); 
+
+    if (window.IS_EXPORTED_GAME) {
+        isExported = true;
+        
+        // CLEANUP: Remove any existing canvas before loading new one (Fixes duplicate canvas on export load)
+        const container = document.getElementById('canvas-container');
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
+        container.appendChild(renderer.domElement);
+
+        project = window.EXPORTED_PROJECT;
+        document.body.classList.add('exported');
+        
+        // Load the level that was active during export, or default to first
+        const startId = project.currentLevelId || project.levels[0].id;
+        loadLevel(startId, true); 
+        togglePlayMode(); 
+    } else {
+        // Load demo levels if empty
+        if(!localStorage.getItem('voxelverse_project')) {
+            createDemoLevels();
+        } else {
+            // Load saved state
+            loadProject();
+        }
+    }
+
+    animate();
+}
+
+const clock = new THREE.Clock();
+function animate() {
+    requestAnimationFrame(animate);
+    const dt = Math.min(clock.getDelta(), 0.1);
+
+    const time = performance.now();
+    for(let i=TWEEN_REGISTRY.length-1; i>=0; i--) {
+        if(TWEEN_REGISTRY[i].update(time)) TWEEN_REGISTRY.splice(i, 1);
+    }
+
+    if (mode === 'edit') updateEditor(dt);
+    else updateGame(dt);
+
+    renderer.render(scene, camera);
+}
+
+init();
+
+</script>
+</body>
+</html>
