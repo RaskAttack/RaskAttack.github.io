@@ -22,6 +22,7 @@
             --warning: #f59e0b;
             --dev: #eab308;
             --ai: #a855f7;
+            --tool-active: #38bdf8;
         }
 
         body.light-mode {
@@ -49,9 +50,20 @@
             border-bottom: 1px solid var(--border-color);
             height: 54px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            
+            /* Responsive Scroll */
             overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
             scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
         }
+
+        /* Toolbar Scrollbar Styling */
+        #toolbar::-webkit-scrollbar { height: 4px; }
+        #toolbar::-webkit-scrollbar-track { background: transparent; }
+        #toolbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+        #toolbar::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
         .logo { 
             font-weight: 900; font-size: 22px; 
@@ -68,12 +80,20 @@
             background: var(--bg-element); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; 
             border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;
             display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            flex-shrink: 0;
-            white-space: nowrap;
+            flex-shrink: 0; white-space: nowrap;
         }
         .btn:hover { background: var(--bg-element-hover); transform: translateY(-1px); }
         .btn:active { transform: translateY(0); }
         
+        /* Tool Button Styling */
+        .btn.tool-btn { border-left: 3px solid transparent; }
+        .btn.tool-btn.active { 
+            background: rgba(56, 189, 248, 0.15); 
+            border-color: var(--accent); 
+            color: var(--accent);
+            box-shadow: inset 0 0 8px rgba(56, 189, 248, 0.2);
+        }
+
         .btn.primary { background: var(--accent); color: #0f172a; border: none; }
         .btn.primary:hover { background: var(--accent-hover); box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); color: white; }
         
@@ -101,7 +121,7 @@
         #palette {
             pointer-events: auto;
             position: absolute; left: 16px; top: 80px; bottom: 40px;
-            width: 96px;
+            width: 100px;
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
             border-radius: 16px;
@@ -239,7 +259,14 @@
             <div class="logo">VoxelVerse</div>
             <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
             
-            <select id="level-select" onchange="switchLevel(this.value)" title="Select Level"></select>
+            <button class="btn tool-btn active" id="tool-brush" onclick="selectToolMode('brush')" title="Brush (Place Blocks)">🧱</button>
+            <button class="btn tool-btn" id="tool-fill" onclick="selectToolMode('fill')" title="Box Fill">🔲</button>
+            <button class="btn tool-btn" id="tool-eraser" onclick="selectToolMode('eraser')" title="Eraser">❌</button>
+            <button class="btn tool-btn" id="tool-pick" onclick="selectToolMode('pick')" title="Picker">💉</button>
+            
+            <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
+            
+            <select id="level-select" onchange="switchLevel(this.value)" title="Select Level" style="max-width: 100px;"></select>
             <button class="btn" onclick="openModal('level')" title="New Level">➕</button>
             <button class="btn danger" onclick="deleteLevel()" title="Delete Level">🗑️</button>
             <button class="btn danger" onclick="clearCurrentLevel()" title="Clear All Blocks">🧹</button>
@@ -278,9 +305,8 @@
             <div class="row"><span>Move Cam</span> <span><span class="key">WASD</span></span></div>
             <div class="row"><span>Look</span> <span><span class="key">R-Click</span> + Drag</span></div>
             <div class="row"><span>Up/Down</span> <span><span class="key">Space</span>/<span class="key">Ctrl</span></span></div>
-            <div class="row"><span>Place/Delete</span> <span><span class="key">L-Click</span></span></div>
+            <div class="row"><span>Interact</span> <span><span class="key">L-Click</span></span></div>
             <div class="row"><span>Pick</span> <span><span class="key">R-Click</span> Block</span></div>
-            <div class="row"><span>Fast Fly</span> <span><span class="key">Shift</span></span></div>
         </div>
         
         <div id="credits">Made by oiPoipoi Games</div>
@@ -288,7 +314,7 @@
         <div id="play-ui">
             <div class="score-pill"><span>🪙</span> <span id="coin-count">0</span></div>
             <div style="margin-top: 10px; text-align: center; color: rgba(255,255,255,0.6); font-size: 12px; font-weight: 500;">
-                <span class="key" style="background: rgba(255,255,255,0.2);">ESC</span> Pause / <span class="key" style="background: rgba(255,255,255,0.2);">R</span> Restart / <span class="key" style="background: rgba(255,255,255,0.2);">Space</span> Jump
+                <span class="key" style="background: rgba(255,255,255,0.2);">ESC</span> Pause / <span class="key" style="background: rgba(255,255,255,0.2);">R</span> Restart / <span class="key" style="background: rgba(255,255,255,0.2);">Space</span> Jump / <span class="key" style="background: rgba(255,255,255,0.2);">W</span> Climb
             </div>
             <div id="god-mode-indicator">⚡ GOD MODE ACTIVE ⚡</div>
         </div>
@@ -446,7 +472,7 @@
 
 <script>
 /**
- * VOXELVERSE ENGINE v7.1
+ * VOXELVERSE ENGINE v7.2
  * Made by oiPoipoi Games
  */
 
@@ -478,7 +504,8 @@ let project = {
     customBlocks: []
 };
 let objects = []; 
-let selectedTool = 'brick';
+let currentBlockType = 'brick'; // Renamed from selectedTool
+let currentTool = 'brush';      // 'brush', 'fill', 'eraser', 'pick'
 let isExported = false;
 let devMode = false;
 let godMode = false;
@@ -493,6 +520,7 @@ let userApiKey = "";
 let aiEnabled = true;
 let isFillMode = false;
 let isPainting = false;
+let fillStart = null; 
 
 // Physics State
 let player = {
@@ -502,11 +530,38 @@ let player = {
     radius: 0.3,
     height: 1.6,
     friction: 10,
-    speedMod: 1
+    speedMod: 1,
+    onLadder: false
 };
 
 const input = { keys: {}, mouse: new THREE.Vector2(), mouseDown: false, rightDown: false };
-let fillStart = null; 
+
+// --- TWEEN ENGINE (Moved Up) ---
+const easingElastic = t => {
+    const c4 = (2 * Math.PI) / 3;
+    return t === 0 ? 0 : t === 1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4);
+};
+
+const TWEEN_REGISTRY = [];
+class TWEEN {
+    constructor(target) { this.target = target; this.toVals = {}; this.duration = 1000; this.startTime = 0; this.started = false; this.startVals = {}; this.easingFn = t => t; }
+    to(vals, dur) { this.toVals = vals; this.duration = dur; return this; }
+    easing(fn) { this.easingFn = fn; return this; }
+    start() { 
+        this.startTime = performance.now(); 
+        this.started = true;
+        for(let k in this.toVals) this.startVals[k] = this.target[k];
+        TWEEN_REGISTRY.push(this);
+    }
+    update(t) {
+        const progress = Math.min(1, (t - this.startTime) / this.duration);
+        const eased = this.easingFn(progress);
+        for(let k in this.toVals) {
+            this.target[k] = this.startVals[k] + (this.toVals[k] - this.startVals[k]) * eased;
+        }
+        return progress >= 1;
+    }
+}
 
 // --- THREE.JS INIT ---
 const scene = new THREE.Scene();
@@ -647,6 +702,15 @@ function submitModal() {
     }
 }
 
+function selectToolMode(toolName) {
+    currentTool = toolName;
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tool-' + toolName).classList.add('active');
+    
+    // Reset any pending states
+    fillStart = null;
+}
+
 function toggleFillMode() {
     isFillMode = !isFillMode;
     const btn = document.getElementById('bm-fill-btn');
@@ -709,12 +773,10 @@ function paintPixel(i) {
 function floodFill(startIndex) {
     const targetColor = painterPixels[startIndex];
     const replacementColor = document.getElementById('bm-paint-color').value;
-    // Normalize colors for comparison (simple check)
-    // Actually input color is hex. Array is hex. Should match.
     if (targetColor === replacementColor) return;
 
     const stack = [startIndex];
-    const seen = new Set(); // Prevent infinite loops if logic fails
+    const seen = new Set(); 
 
     while (stack.length > 0) {
         const i = stack.pop();
@@ -722,7 +784,7 @@ function floodFill(startIndex) {
         seen.add(i);
 
         if (painterPixels[i] === targetColor) {
-            paintPixel(i); // Update logic
+            paintPixel(i); 
             
             const x = i % 16;
             const y = Math.floor(i / 16);
@@ -927,6 +989,9 @@ function getTexture(type, color, text, customPixels) {
     canvas.width = 128; canvas.height = 128; 
     const ctx = canvas.getContext('2d');
 
+    ctx.fillStyle = color;
+    ctx.fillRect(0,0,128,128);
+
     if (customPixels) {
         const scale = 128 / 16;
         for(let i=0; i<256; i++) {
@@ -936,8 +1001,6 @@ function getTexture(type, color, text, customPixels) {
             ctx.fillRect(x, y, scale, scale);
         }
     } else {
-        ctx.fillStyle = color;
-        ctx.fillRect(0,0,128,128);
         addNoise(ctx, 0.05);
 
         if (type === 'sign') {
@@ -1054,9 +1117,6 @@ function addNoise(ctx, alpha) {
 
 // --- TOOLS & PALETTE ---
 let TOOLS = {
-    'eraser':{ name: 'Eraser', type: 'tool', color: '#ef4444', icon: '❌', isEraser: true },
-    'pick':  { name: 'Picker', type: 'tool', color: '#6366f1', icon: '💉', isPicker: true },
-    'fill':  { name: 'Box Fill', type: 'tool', color: '#ec4899', icon: '🔲', isFill: true },
     'sign':  { name: 'Sign', type: 'solid', color: '#64748b', tex: 'sign', icon: '🪧', shape: 'sign' },
     'brick': { name: 'Brick', type: 'solid', color: '#8d6e63', tex: 'brick', icon: '🧱' },
     'grass': { name: 'Grass', type: 'solid', color: '#4ade80', tex: 'grass', icon: '🌿' },
@@ -1099,9 +1159,12 @@ function initPalette() {
 
     Object.entries(allTools).forEach(([key, tool]) => {
         const el = document.createElement('div');
-        el.className = `tool-item ${selectedTool === key ? 'selected' : ''} ${devMode && DEV_TOOLS[key] ? 'dev-item' : ''} ${tool.isCustom ? 'custom-item' : ''}`;
+        el.className = `tool-item ${currentBlockType === key ? 'selected' : ''} ${devMode && DEV_TOOLS[key] ? 'dev-item' : ''} ${tool.isCustom ? 'custom-item' : ''}`;
         el.onclick = () => {
-            selectedTool = key;
+            currentBlockType = key; // Select MATERIAL
+            // If current tool is eraser or pick, switch back to brush for convenience?
+            // Actually, keep tool but update material
+            // User might want to Fill with this new material
             document.querySelectorAll('.tool-item').forEach(e => e.classList.remove('selected'));
             el.classList.add('selected');
         };
@@ -1123,11 +1186,10 @@ function createCustomBlockFromUI() {
         name: name,
         color: color,
         type: type === 'hazard' || type === 'bounce' || type === 'speed' ? 'solid' : 'solid', 
-        tex: 'custom', // Trigger custom texture logic
+        tex: 'custom', 
         icon: '📦',
         isCustom: true,
-        customPixels: [...painterPixels], // Save pixel data array
-        // Properties
+        customPixels: [...painterPixels], 
         gameType: type === 'hazard' ? 'hazard' : 'solid',
         bounce: type === 'bounce' ? force : 0,
         friction: type === 'ice' ? 0.05 : (type === 'mud' ? 50 : 10), 
@@ -1135,7 +1197,6 @@ function createCustomBlockFromUI() {
         script: script
     };
     
-    // Correct properties based on selection
     if (type === 'ice') newBlock.friction = 0.5;
     if (type === 'mud') newBlock.friction = 20;
 
@@ -1170,7 +1231,6 @@ function updateBuildScale() {
 // --- OBJECT MANAGEMENT ---
 
 function createMesh(type, x, y, z, text, scaleVal = {x:1,y:1,z:1}) {
-    // Check main tools, dev tools, and custom blocks
     let data = TOOLS[type] || DEV_TOOLS[type];
     if (!data && project.customBlocks) {
         data = project.customBlocks.find(b => b.id === type);
@@ -1199,7 +1259,6 @@ function createMesh(type, x, y, z, text, scaleVal = {x:1,y:1,z:1}) {
     }
 
     const matProps = { color: data.color };
-    // Pass custom pixels if available
     if (data.tex) matProps.map = getTexture(data.tex, data.color, text, data.customPixels); 
     if (data.opacity) { matProps.transparent = true; matProps.opacity = data.opacity; }
     if (data.emissive) { matProps.emissive = data.emissive; matProps.emissiveIntensity = 0.5; }
@@ -1233,7 +1292,7 @@ function createMesh(type, x, y, z, text, scaleVal = {x:1,y:1,z:1}) {
 }
 
 function addObject(x, y, z, type, text = null, scaleOverride = null) {
-    if (type === 'eraser' || type === 'pick' || type === 'fill') return; 
+    if (type === 'eraser') return; 
 
     // LIMIT CHECK
     if (!devMode && objects.length >= LIMITS.BLOCKS) {
@@ -1420,6 +1479,10 @@ function performExport(title, btnText) {
         if(el) el.remove();
     });
 
+    // Embed data in comments for easy import
+    const dataComment = document.createComment(`VOXELDATA[${b64}]`);
+    clone.appendChild(dataComment);
+
     const script = document.createElement('script');
     script.textContent = `
         window.IS_EXPORTED_GAME = true;
@@ -1454,13 +1517,16 @@ function handleFileSelect(input) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const content = e.target.result;
-        // More robust string matching finding the base64 payload
-        const startIndex = content.indexOf('const raw = "') + 13;
-        const endIndex = content.indexOf('";', startIndex);
+        // Search for the comment marker
+        const startMarker = "VOXELDATA[";
+        const startIndex = content.indexOf(startMarker);
         
-        if (startIndex > 12 && endIndex > startIndex) {
+        if (startIndex !== -1) {
             try {
-                const raw = content.substring(startIndex, endIndex);
+                const start = startIndex + startMarker.length;
+                const end = content.indexOf("]", start);
+                const raw = content.substring(start, end);
+                
                 const json = decodeURIComponent(Array.prototype.map.call(atob(raw), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
                 const importedProject = JSON.parse(json);
                 
@@ -1475,7 +1541,19 @@ function handleFileSelect(input) {
                 showToast("Error parsing file.");
             }
         } else {
-            showToast("Invalid VoxelVerse file.");
+            // Fallback to legacy regex
+            const match = content.match(/const\s+raw\s*=\s*"([^"]+)"/);
+            if(match && match[1]) {
+                 try {
+                    const raw = match[1];
+                    const json = decodeURIComponent(Array.prototype.map.call(atob(raw), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                    project = JSON.parse(json);
+                    loadLevel(project.levels[0].id);
+                    showToast("Legacy Game Imported!");
+                 } catch(e) { showToast("Invalid File"); }
+            } else {
+                showToast("Invalid VoxelVerse file.");
+            }
         }
     };
     reader.readAsText(file);
@@ -1527,54 +1605,52 @@ scene.add(ghostBox);
 function updateEditor(dt) {
     const speed = input.keys['ShiftLeft'] ? 20 : 10;
     
-    if (input.rightDown) {
-        const sensitivity = 0.003;
-        // Rotation handled in mousemove
-    }
-
+    // Rotation handled in mousemove
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-
-    if (input.keys['KeyW']) camera.position.add(forward.multiplyScalar(speed * dt));
-    if (input.keys['KeyS']) camera.position.add(forward.multiplyScalar(-speed * dt));
-    if (input.keys['KeyA']) camera.position.add(right.multiplyScalar(-speed * dt));
-    if (input.keys['KeyD']) camera.position.add(right.multiplyScalar(speed * dt));
     
-    if (input.keys['Space']) camera.position.y += speed * dt;
-    if (input.keys['ControlLeft'] || input.keys['ControlRight']) camera.position.y -= speed * dt;
+    // INPUT FIX: Only move if not typing in input
+    if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        if (input.keys['KeyW']) camera.position.add(forward.multiplyScalar(speed * dt));
+        if (input.keys['KeyS']) camera.position.add(forward.multiplyScalar(-speed * dt));
+        if (input.keys['KeyA']) camera.position.add(right.multiplyScalar(-speed * dt));
+        if (input.keys['KeyD']) camera.position.add(right.multiplyScalar(speed * dt));
+        
+        if (input.keys['Space']) camera.position.y += speed * dt;
+        if (input.keys['ControlLeft'] || input.keys['ControlRight']) camera.position.y -= speed * dt;
+    }
 
     const ray = new THREE.Raycaster();
     ray.setFromCamera(input.mouse, camera);
     const intersects = ray.intersectObjects(objects);
     
-    if (selectedTool === 'eraser' || selectedTool === 'pick') {
+    if (currentTool === 'eraser' || currentTool === 'pick') {
         if (intersects.length > 0) {
             const hitObj = intersects[0].object;
             ghostBox.position.copy(hitObj.position);
-            
-            // Respect scale for highlighting
             const s = hitObj.userData.scale || {x:1,y:1,z:1};
             ghostBox.scale.set(s.x*1.05, s.y*1.05, s.z*1.05); 
-            
-            const color = selectedTool === 'eraser' ? 0xff0000 : 0x00ff00;
+            const color = currentTool === 'eraser' ? 0xff0000 : 0x00ff00;
             ghostBox.material.color.setHex(color);
             ghostBox.visible = true;
             
             if (input.mouseDown) {
-                if (selectedTool === 'eraser') {
+                if (currentTool === 'eraser') {
                      removeObject(hitObj);
-                } else if (selectedTool === 'pick') {
-                     // Pick logic
-                     selectedTool = hitObj.userData.type;
-                     // UI Update
-                     document.querySelectorAll('.tool-item').forEach(e => e.classList.remove('selected'));
-                     // Find and highlight
-                     // Update size inputs
+                } else if (currentTool === 'pick') {
+                     currentBlockType = hitObj.userData.type;
+                     const s = hitObj.userData.scale;
                      document.getElementById('scale-x').value = s.x;
                      document.getElementById('scale-y').value = s.y;
                      document.getElementById('scale-z').value = s.z;
                      updateBuildScale();
-                     showToast("Picked: " + selectedTool);
+                     document.querySelectorAll('.tool-item').forEach(e => {
+                         e.classList.remove('selected');
+                         if(e.innerText.includes(currentBlockType)) e.classList.add('selected'); // loose match or ID match
+                     });
+                     // Reset to brush
+                     selectToolMode('brush');
+                     showToast("Picked: " + currentBlockType);
                 }
                 input.mouseDown = false;
             }
@@ -1582,6 +1658,7 @@ function updateEditor(dt) {
             ghostBox.visible = false;
         }
     } else {
+        // BRUSH / FILL
         let targetPos = new THREE.Vector3();
         let valid = false;
 
@@ -1615,10 +1692,8 @@ function updateEditor(dt) {
             }
 
             if (valid) {
-                ghostBox.position.set(x, y, z);
-                
-                // Live resize ghost based on Fill or Normal
-                if (selectedTool === 'fill' && fillStart) {
+                // Ghost Visuals
+                if (currentTool === 'fill' && fillStart) {
                     // Box Fill Preview
                     const minX = Math.min(fillStart.x, x);
                     const maxX = Math.max(fillStart.x, x);
@@ -1627,27 +1702,18 @@ function updateEditor(dt) {
                     const minZ = Math.min(fillStart.z, z);
                     const maxZ = Math.max(fillStart.z, z);
                     
-                    const sizeX = (maxX - minX) + 1;
-                    const sizeY = (maxY - minY) + 1;
-                    const sizeZ = (maxZ - minZ) + 1;
+                    const width = (maxX - minX) + 1; // Grid units
+                    const height = (maxY - minY) + 1;
+                    const depth = (maxZ - minZ) + 1;
                     
-                    ghostBox.position.set(minX, minY, minZ);
-                    // Standard mesh is 1x1x1 translated 0.5 up. 
-                    // We need to scale to fit box. 
-                    // Position is bottom-left corner of box.
-                    
-                    // Reset mesh pivot is at bottom center relative to mesh pos.
-                    // Actually createMesh uses center. 
-                    
-                    // Simple Ghost Visual for box fill is tricky with pivot offsets.
-                    // Just show a 1x1 at target for now, or sophisticated scaling:
-                    ghostBox.scale.set(sizeX, sizeY, sizeZ);
-                    // Adjust position to center of mass
-                    ghostBox.position.set(minX + (sizeX-1)/2, minY, minZ + (sizeZ-1)/2); 
-                    
+                    // Ghost scaling for box selection
+                    // Scale applies to 1x1x1 geometry
+                    ghostBox.scale.set(width, height, depth);
+                    ghostBox.position.set(minX + (width-1)/2, minY, minZ + (depth-1)/2); 
                     ghostBox.material.color.setHex(0xff00ff);
                 } else {
                     // Normal Build Ghost
+                    ghostBox.position.set(x, y, z);
                     ghostBox.scale.set(buildScale.x, buildScale.y, buildScale.z);
                     ghostBox.material.color.setHex(0xffffff);
                 }
@@ -1655,13 +1721,10 @@ function updateEditor(dt) {
                 ghostBox.visible = true;
 
                 if (input.mouseDown) {
-                    if (selectedTool === 'sign') {
-                        pendingPlaceCoords = {x, y, z};
-                        openModal('sign');
-                    } else if (selectedTool === 'fill') {
-                        if (!fillStart) {
-                            fillStart = {x, y, z};
-                            showToast("Start Point Set. Click End Point.");
+                    if (currentTool === 'fill') {
+                        if(!fillStart) {
+                            fillStart = {x,y,z};
+                            showToast("Start Point Set");
                         } else {
                             // Perform Fill
                             const minX = Math.min(fillStart.x, x);
@@ -1671,27 +1734,37 @@ function updateEditor(dt) {
                             const minZ = Math.min(fillStart.z, z);
                             const maxZ = Math.max(fillStart.z, z);
                             
-                            const count = (maxX-minX+1)*(maxY-minY+1)*(maxZ-minZ+1);
+                            // Check count
+                            let count = 0;
+                            // Naive loop
+                             for(let ix=minX; ix<=maxX; ix++) {
+                                for(let iy=minY; iy<=maxY; iy++) {
+                                    for(let iz=minZ; iz<=maxZ; iz++) {
+                                        count++;
+                                    }
+                                }
+                            }
+                            
                             if (count > 500) {
-                                alert("Too many blocks! (Max 500)");
+                                alert("Area too big! Max 500 blocks.");
                             } else {
-                                // Default fill block is Brick unless picked otherwise? 
-                                // Let's assume we fill with 'brick' or add a sub-selection?
-                                // For now, fill with current default tool if it's solid, else brick.
-                                const fillType = 'brick'; 
-                                
                                 for(let ix=minX; ix<=maxX; ix++) {
                                     for(let iy=minY; iy<=maxY; iy++) {
                                         for(let iz=minZ; iz<=maxZ; iz++) {
-                                            addObject(ix, iy, iz, fillType);
+                                            addObject(ix, iy, iz, currentBlockType);
                                         }
                                     }
                                 }
                             }
                             fillStart = null;
                         }
-                    } else {
-                        addObject(x, y, z, selectedTool);
+                    } 
+                    else if (currentBlockType === 'sign') {
+                        pendingPlaceCoords = {x, y, z};
+                        openModal('sign');
+                    } 
+                    else {
+                        addObject(x, y, z, currentBlockType);
                     }
                     input.mouseDown = false; 
                 }
@@ -1722,14 +1795,17 @@ function updateGame(dt) {
     const rayDown = new THREE.Raycaster(player.pos.clone().add(new THREE.Vector3(0, 0.1, 0)), new THREE.Vector3(0,-1,0), 0, 1.2);
     const floorHits = rayDown.intersectObjects(objects);
     
+    // Default physics
+    player.friction = 10;
+    player.speedMod = 1;
+    player.onLadder = false;
+
     if (floorHits.length > 0 && player.onGround) {
         const floorObj = floorHits[0].object;
         player.friction = floorObj.userData.friction;
         player.speedMod = floorObj.userData.speed;
         
-        if (floorObj.userData.gameType === 'hazard' && !godMode) {
-            restartLevel();
-        }
+        if (floorObj.userData.gameType === 'hazard' && !godMode) restartLevel();
 
         if (floorObj.userData.isTP) {
             const targets = objects.filter(o => o.userData.isTP && o !== floorObj);
@@ -1741,10 +1817,10 @@ function updateGame(dt) {
             }
         }
     } else {
-        player.friction = 2; 
-        player.speedMod = 1;
+        player.friction = 2; // Air resistance
     }
 
+    // Gravity
     player.vel.y -= CONFIG.gravity * dt;
     
     const fwd = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
@@ -1774,25 +1850,27 @@ function updateGame(dt) {
         // Move X
         let candidate = player.pos.clone();
         candidate.x += player.vel.x * subDt;
-        // Lift feet slightly to ignore floor friction
-        let wallCheck = candidate.clone();
-        wallCheck.y += 0.05; 
+        // Lift feet check for walls
+        let wallCheck = candidate.clone(); wallCheck.y += 0.05; 
         
-        if(!checkCol(wallCheck)) {
+        const colX = checkCol(wallCheck);
+        if(!colX) {
             player.pos.x = candidate.x;
         } else {
-            player.vel.x = 0;
+             if(colX.userData.isClimb) player.onLadder = true;
+             player.vel.x = 0;
         }
 
         // Move Z
         candidate = player.pos.clone();
         candidate.z += player.vel.z * subDt;
-        wallCheck = candidate.clone();
-        wallCheck.y += 0.05;
+        wallCheck = candidate.clone(); wallCheck.y += 0.05;
 
-        if(!checkCol(wallCheck)) {
+        const colZ = checkCol(wallCheck);
+        if(!colZ) {
             player.pos.z = candidate.z;
         } else {
+            if(colZ.userData.isClimb) player.onLadder = true;
             player.vel.z = 0;
         }
 
@@ -1805,16 +1883,20 @@ function updateGame(dt) {
             player.pos.y = candidate.y;
             player.onGround = false;
         } else {
+            if(colY.userData.isClimb) player.onLadder = true;
+
             if(player.vel.y < 0) { // Landing
-                player.onGround = true;
-                // Snap to top of box
-                // We need the precise top of the colliding box
-                player.pos.y = colY.box.max.y; 
-                player.vel.y = 0;
-                
-                if (colY.userData.bounce > 0) {
-                    player.vel.y = CONFIG.jumpForce * colY.userData.bounce;
-                    player.onGround = false;
+                if(!player.onLadder) {
+                    player.onGround = true;
+                    // Snap to top of box
+                    // We need the precise top of the colliding box
+                    player.pos.y = colY.box.max.y; 
+                    player.vel.y = 0;
+                    
+                    if (colY.userData.bounce > 0) {
+                        player.vel.y = CONFIG.jumpForce * colY.userData.bounce;
+                        player.onGround = false;
+                    }
                 }
             } else { 
                 player.vel.y = 0;
@@ -1822,10 +1904,20 @@ function updateGame(dt) {
         }
     }
 
-    const groundCheck = checkCol(player.pos.clone().sub(new THREE.Vector3(0, 0.05, 0)));
-    const canJump = player.onGround || (groundCheck !== null);
+    // Ladder Physics override
+    if (player.onLadder) {
+        player.vel.y = 0; // stop gravity
+        if(input.keys['KeyW']) player.vel.y = 6;
+        if(input.keys['KeyS']) player.vel.y = -6;
+        if(input.keys['Space']) player.vel.y = 6; // Jump up ladder
+        // allow moving off ladder
+        player.pos.y += player.vel.y * dt; // Apply climb manually since gravity loop is done
+    }
 
-    if (input.keys['Space'] && canJump) {
+    const groundCheck = checkCol(player.pos.clone().sub(new THREE.Vector3(0, 0.05, 0)));
+    const canJump = player.onGround || (groundCheck !== null) || player.onLadder;
+
+    if (input.keys['Space'] && canJump && !player.onLadder) {
         player.vel.y = CONFIG.jumpForce;
         player.onGround = false;
     }
@@ -1840,7 +1932,6 @@ function updateGame(dt) {
     // Custom Script Handling
     if(player.onGround && groundCheck && groundCheck.userData.script) {
         try {
-            // Safe(r) eval
             new Function('player', 'block', groundCheck.userData.script)(player, groundCheck.userData);
         } catch(e) {}
     }
@@ -1909,7 +2000,6 @@ function checkCol(pos) {
         
         const s = o.userData.scale || {x:1,y:1,z:1};
         const box = new THREE.Box3();
-        // Box is centered on X/Z but starts at Y
         box.min.set(o.position.x - 0.5*s.x, o.position.y, o.position.z - 0.5*s.z);
         box.max.set(o.position.x + 0.5*s.x, o.position.y + s.y, o.position.z + 0.5*s.z);
 
@@ -1946,238 +2036,28 @@ function checkCol(pos) {
     return null;
 }
 
-// --- STATE MANAGEMENT ---
-
-function togglePlayMode() {
-    if (mode === 'edit') {
-        const spawn = objects.find(o => o.userData.type === 'spawn');
-        if (!spawn) { alert("Place a 'Start' point first!"); return; }
-        
-        saveCurrentLevelState(); 
-        player.pos.copy(spawn.position);
-        player.vel.set(0,0,0);
-        player.onGround = false;
-        score = 0;
-        gameEnded = false;
-        document.getElementById('coin-count').innerText = 0;
-        bullets.forEach(b => scene.remove(b.mesh));
-        bullets = [];
-        
-        objects.forEach(o => {
-            if(o.userData.gameType === 'collectible') o.visible = true;
-        });
-
-        mode = 'play';
-        document.body.requestPointerLock();
-        
-        // Hide UI via Style
-        document.getElementById('toolbar').style.display = 'none';
-        document.getElementById('palette').style.display = 'none';
-        document.getElementById('play-ui').style.display = 'block';
-        document.getElementById('crosshair').style.display = 'block';
-        document.getElementById('controls-info').style.display = 'none';
-        document.getElementById('credits').style.display = 'none';
-        gridHelper.visible = false;
-        ghostBox.visible = false;
-
-    } else {
-        stopGame();
-    }
-}
-
-function stopGame() {
-    // If exported, disable exit on win/death via game over screens
-    if(isExported && (document.getElementById('game-over').style.display === 'flex')) {
-        return; // Block exit
-    }
-
-    mode = 'edit';
-    document.exitPointerLock();
-    
-    camera.position.set(0, 10, 10);
-    camera.lookAt(0,0,0);
-    camera.rotation.set(-0.5, 0, 0); 
-    
-    if(!isExported) {
-        document.getElementById('toolbar').style.display = 'flex';
-        document.getElementById('palette').style.display = 'flex';
-        document.getElementById('controls-info').style.display = 'block';
-        document.getElementById('credits').style.display = 'block';
-    }
-    document.getElementById('play-ui').style.display = 'none';
-    document.getElementById('crosshair').style.display = 'none';
-    document.getElementById('game-over').style.display = 'none';
-    gridHelper.visible = true;
-    ghostBox.visible = true;
-    bullets.forEach(b => scene.remove(b.mesh));
-    bullets = [];
-}
-
-function showPauseMenu() {
-    if(gameEnded) return;
-    document.getElementById('go-title').innerText = "PAUSED";
-    document.getElementById('btn-next-level').style.display = 'none';
-    document.getElementById('btn-resume').style.display = 'inline-block';
-    document.getElementById('game-over').style.display = 'flex';
-}
-
-function resumeGame() {
-    document.getElementById('game-over').style.display = 'none';
-    document.body.requestPointerLock();
-}
-
-function winLevel() {
-    gameEnded = true;
-    document.exitPointerLock();
-    
-    const currIdx = project.levels.findIndex(l => l.id === project.currentLevelId);
-    const hasNext = currIdx !== -1 && currIdx < project.levels.length - 1;
-
-    document.getElementById('go-title').innerText = hasNext ? "LEVEL COMPLETE" : "GAME COMPLETE";
-    
-    document.getElementById('btn-resume').style.display = 'none';
-    document.getElementById('btn-next-level').style.display = hasNext ? 'inline-block' : 'none';
-    document.getElementById('game-over').style.display = 'flex';
-}
-
-function nextLevel() {
-    const currIdx = project.levels.findIndex(l => l.id === project.currentLevelId);
-    if(currIdx !== -1 && currIdx < project.levels.length - 1) {
-        const nextId = project.levels[currIdx + 1].id;
-        loadLevel(nextId);
-        
-        document.getElementById('game-over').style.display = 'none';
-        togglePlayMode();
-    }
-}
-
-function restartLevel() {
-    if (godMode && !gameEnded) return;
-    
-    // Auto restart if exported and game over screen hidden or died
-    if (isExported && !gameEnded) {
-        const spawn = objects.find(o => o.userData.type === 'spawn');
-        if(spawn) player.pos.copy(spawn.position);
-        player.vel.set(0,0,0);
-        gameEnded = false;
-        bullets.forEach(b => scene.remove(b.mesh));
-        bullets = [];
-        objects.forEach(o => { if(o.userData.gameType === 'collectible') o.visible = true; });
-        return; // Don't show menu
-    }
-
-    const spawn = objects.find(o => o.userData.type === 'spawn');
-    if(spawn) player.pos.copy(spawn.position);
-    player.vel.set(0,0,0);
-    gameEnded = false;
-    bullets.forEach(b => scene.remove(b.mesh));
-    bullets = [];
-    objects.forEach(o => { if(o.userData.gameType === 'collectible') o.visible = true; });
-    
-    if (document.getElementById('game-over').style.display === 'none') {
-    } else {
-        document.getElementById('game-over').style.display = 'none';
-        document.body.requestPointerLock();
-    }
-}
-
-// --- EVENTS ---
-
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-window.addEventListener('keydown', e => {
-    if(document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return; 
-    input.keys[e.code] = true;
-});
-
-window.addEventListener('keyup', e => input.keys[e.code] = false);
-
-window.addEventListener('mousedown', e => {
-    if(e.target !== renderer.domElement) return;
-
-    if(e.button === 0) input.mouseDown = true;
-    if(e.button === 2) {
-        input.rightDown = true;
-        if(mode === 'edit') document.body.style.cursor = 'grabbing';
-    }
-});
-window.addEventListener('mouseup', e => {
-    if(e.button === 0) input.mouseDown = false;
-    if(e.button === 2) {
-        input.rightDown = false;
-        if(mode === 'edit') document.body.style.cursor = 'default';
-    }
-});
-
-document.addEventListener('pointerlockchange', () => {
-    if(document.pointerLockElement !== document.body && mode === 'play') {
-        if(document.getElementById('game-over').style.display === 'none') {
-            showPauseMenu();
-        }
-    }
-});
-
-window.addEventListener('contextmenu', e => e.preventDefault());
-
-window.addEventListener('mousemove', e => {
-    input.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-    input.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-    // EDITOR: Always rotate if Right Click is held
-    if (mode === 'edit' && input.rightDown) {
-        const sensitivity = 0.003;
-        camera.rotation.y -= e.movementX * sensitivity;
-        camera.rotation.x -= e.movementY * sensitivity;
-        camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
-    }
-
-    if (mode === 'play' && document.pointerLockElement === document.body) {
-        const sensitivity = 0.002;
-        camera.rotation.y -= e.movementX * sensitivity;
-        camera.rotation.x -= e.movementY * sensitivity;
-        camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
-    }
-});
-
-// --- HELPER UTILS ---
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.innerText = msg;
-    t.style.opacity = 1;
-    setTimeout(() => t.style.opacity = 0, 2000);
-}
-
-const easingElastic = t => {
-    const c4 = (2 * Math.PI) / 3;
-    return t === 0 ? 0 : t === 1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4);
-};
-
-const TWEEN_REGISTRY = [];
-class TWEEN {
-    constructor(target) { this.target = target; this.toVals = {}; this.duration = 1000; this.startTime = 0; this.started = false; this.startVals = {}; this.easingFn = t => t; }
-    to(vals, dur) { this.toVals = vals; this.duration = dur; return this; }
-    easing(fn) { this.easingFn = fn; return this; }
-    start() { 
-        this.startTime = performance.now(); 
-        this.started = true;
-        for(let k in this.toVals) this.startVals[k] = this.target[k];
-        TWEEN_REGISTRY.push(this);
-    }
-    update(t) {
-        const progress = Math.min(1, (t - this.startTime) / this.duration);
-        const eased = this.easingFn(progress);
-        for(let k in this.toVals) {
-            this.target[k] = this.startVals[k] + (this.toVals[k] - this.startVals[k]) * eased;
-        }
-        return progress >= 1;
-    }
-}
-
 // --- BOOTSTRAP ---
+function createDemoLevels() {
+    const tutorial = {
+        id: 'lvl1', name: 'Tutorial',
+        objects: [
+            {x:0,y:0,z:0,type:'grass'}, {x:0,y:0,z:0,type:'spawn'}, 
+            {x:0,y:1,z:2,type:'sign', text:"WASD Move"},
+            {x:0,y:0,z:-1,type:'grass'}, {x:0,y:0,z:-2,type:'grass'},
+            {x:0,y:0,z:-3,type:'brick'}, {x:0,y:1,z:-3,type:'brick'},
+            {x:-2,y:1,z:-3,type:'sign', text:"Space Jump"},
+            {x:0,y:0,z:-4,type:'grass'}, {x:0,y:0,z:-5,type:'grass'},
+            {x:0,y:0,z:-6,type:'bounce'},
+            {x:2,y:1,z:-6,type:'sign', text:"Jump Pad"},
+            {x:0,y:3,z:-8,type:'brick'}, {x:0,y:3,z:-9,type:'brick'},
+            {x:0,y:3,z:-10,type:'goal'}
+        ]
+    };
+    project.levels = [tutorial];
+    project.currentLevelId = 'lvl1';
+    loadLevel('lvl1', true);
+}
+
 function init() {
     initPalette();
     camera.rotation.order = 'YXZ'; 
