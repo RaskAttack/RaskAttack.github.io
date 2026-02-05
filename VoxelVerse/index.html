@@ -44,11 +44,13 @@
             background: var(--bg-panel); 
             padding: 8px 16px; 
             display: flex; 
-            gap: 12px; 
+            gap: 8px; 
             align-items: center; 
             border-bottom: 1px solid var(--border-color);
             height: 54px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+            scrollbar-width: thin;
         }
 
         .logo { 
@@ -59,12 +61,15 @@
             margin-right: 10px; letter-spacing: -0.5px; 
             text-transform: uppercase;
             text-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);
+            flex-shrink: 0;
         }
 
         .btn {
-            background: var(--bg-element); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 16px; 
+            background: var(--bg-element); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; 
             border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;
             display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+            white-space: nowrap;
         }
         .btn:hover { background: var(--bg-element-hover); transform: translateY(-1px); }
         .btn:active { transform: translateY(0); }
@@ -73,23 +78,23 @@
         .btn.primary:hover { background: var(--accent-hover); box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); color: white; }
         
         .btn.danger { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border-color: rgba(239, 68, 68, 0.3); }
-        body.light-mode .btn.danger { color: #dc2626; }
         .btn.danger:hover { background: rgba(239, 68, 68, 0.25); }
         
         .btn.dev { background: rgba(234, 179, 8, 0.15); color: #fde047; border-color: rgba(234, 179, 8, 0.3); }
-        body.light-mode .btn.dev { color: #ca8a04; }
         .btn.dev:hover { background: rgba(234, 179, 8, 0.25); box-shadow: 0 0 10px rgba(234, 179, 8, 0.3); }
 
         .btn.ai { background: rgba(168, 85, 247, 0.15); color: #d8b4fe; border-color: rgba(168, 85, 247, 0.3); }
-        body.light-mode .btn.ai { color: #9333ea; }
         .btn.ai:hover { background: rgba(168, 85, 247, 0.25); box-shadow: 0 0 15px rgba(168, 85, 247, 0.3); }
 
         select, input[type="number"], input[type="text"], input[type="password"], input[type="color"] {
             background: var(--bg-element); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: 8px; outline: none; cursor: pointer;
         }
         
-        .control-group { display: flex; align-items: center; gap: 8px; background: var(--bg-element); padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border-color); }
-        .label { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+        .control-group { 
+            display: flex; align-items: center; gap: 4px; background: var(--bg-element); padding: 4px 8px; 
+            border-radius: 8px; border: 1px solid var(--border-color); flex-shrink: 0;
+        }
+        .label { font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-right: 4px; }
         .checkbox-wrapper { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-muted); }
         input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; }
 
@@ -166,6 +171,7 @@
             background: var(--accent); color: #0f172a; padding: 8px 24px; border-radius: 20px;
             font-weight: 600; opacity: 0; transition: opacity 0.3s; pointer-events: none;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            z-index: 500;
         }
         
         #god-mode-indicator {
@@ -179,18 +185,31 @@
             align-items: center; justify-content: center; z-index: 200; pointer-events: auto;
         }
         .modal {
-            background: var(--bg-element); padding: 24px; border-radius: 16px; width: 320px;
+            background: var(--bg-element); padding: 24px; border-radius: 16px; width: 360px;
             border: 1px solid var(--border-color); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
-            max-height: 80vh; overflow-y: auto;
+            max-height: 90vh; overflow-y: auto;
         }
         .modal h3 { margin-top: 0; color: var(--text-main); margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
         .modal input[type="text"], .modal input[type="number"], .modal input[type="password"] { 
             width: 100%; padding: 10px; margin-bottom: 16px; background: var(--bg-main); 
             border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; box-sizing: border-box;
         }
+        .modal textarea {
+            width: 100%; padding: 10px; margin-bottom: 16px; background: var(--bg-main); 
+            border: 1px solid var(--border-color); color: #a7f3d0; border-radius: 8px; box-sizing: border-box;
+            font-family: monospace; height: 100px; resize: vertical;
+        }
         .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
         .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 14px; color: var(--text-muted); }
         .disclaimer-box { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; font-size: 11px; margin-top: 20px; color: var(--text-muted); border: 1px solid var(--border-color); font-style: italic;}
+
+        /* Pixel Painter */
+        #pixel-grid { 
+            display: grid; grid-template-columns: repeat(16, 1fr); gap: 1px; background: #333; border: 1px solid #555; margin-bottom: 15px; 
+            user-select: none; touch-action: none;
+        }
+        .pixel-cell { width: 100%; aspect-ratio: 1; background: #fff; cursor: pointer; }
+        .pixel-cell:hover { opacity: 0.8; }
 
         /* Start Screen for Exported Games */
         #start-screen {
@@ -205,10 +224,10 @@
         body.exported #controls-info,
         body.exported #btn-editor-return { display: none !important; }
         
-        #loading-ai {
-            display: none;
-            color: var(--ai); font-weight: bold; margin-top: 10px; text-align: center;
-        }
+        #loading-ai { display: none; color: var(--ai); font-weight: bold; margin-top: 10px; text-align: center; }
+        
+        /* Responsive */
+        @media (max-width: 1100px) { .btn-text { display: none; } .btn { padding: 8px; } }
     </style>
 </head>
 <body>
@@ -220,7 +239,7 @@
             <div class="logo">VoxelVerse</div>
             <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
             
-            <select id="level-select" onchange="switchLevel(this.value)"></select>
+            <select id="level-select" onchange="switchLevel(this.value)" title="Select Level"></select>
             <button class="btn" onclick="openModal('level')" title="New Level">➕</button>
             <button class="btn danger" onclick="deleteLevel()" title="Delete Level">🗑️</button>
             <button class="btn danger" onclick="clearCurrentLevel()" title="Clear All Blocks">🧹</button>
@@ -237,15 +256,17 @@
 
             <div class="control-group" style="margin-left: 10px;">
                 <span class="label">Size</span>
-                <input type="number" id="scale-input" value="1" step="0.1" min="0.1" max="5" style="width: 40px;" onchange="updateBuildScale(this.value)">
+                <input type="number" id="scale-x" value="1" step="0.1" min="0.1" max="10" style="width: 35px;" onchange="updateBuildScale()" title="X Size">
+                <input type="number" id="scale-y" value="1" step="0.1" min="0.1" max="10" style="width: 35px;" onchange="updateBuildScale()" title="Y Size">
+                <input type="number" id="scale-z" value="1" step="0.1" min="0.1" max="10" style="width: 35px;" onchange="updateBuildScale()" title="Z Size">
             </div>
 
             <div style="flex-grow: 1;"></div>
-            <button class="btn ai" id="btn-ai-gen" onclick="openModal('ai-gen')" title="Generate Level with AI" style="display:none;">✨ AI Gen</button>
-            <button class="btn" onclick="openModal('block-maker')" title="Block Maker">🔨 Builder</button>
-            <button class="btn" onclick="openImport()" title="Import HTML">📥 Import</button>
-            <button class="btn" onclick="openExportModal()" title="Export HTML">📦 Export</button>
-            <button class="btn" onclick="saveProject()">💾 Save</button>
+            <button class="btn ai" id="btn-ai-gen" onclick="openModal('ai-gen')" title="Generate Level with AI" style="display:none;">✨ <span class="btn-text">AI Gen</span></button>
+            <button class="btn" onclick="openModal('block-maker')" title="Block Maker">🔨 <span class="btn-text">Builder</span></button>
+            <button class="btn" onclick="openImport()" title="Import HTML">📥 <span class="btn-text">Import</span></button>
+            <button class="btn" onclick="openExportModal()" title="Export HTML">📦 <span class="btn-text">Export</span></button>
+            <button class="btn" onclick="saveProject()">💾 <span class="btn-text">Save</span></button>
             <button class="btn" onclick="openSettings()" title="Settings">⚙️</button>
             <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
             <button class="btn primary" id="btn-play" onclick="togglePlayMode()">▶ PLAY</button>
@@ -258,6 +279,7 @@
             <div class="row"><span>Look</span> <span><span class="key">R-Click</span> + Drag</span></div>
             <div class="row"><span>Up/Down</span> <span><span class="key">Space</span>/<span class="key">Ctrl</span></span></div>
             <div class="row"><span>Place/Delete</span> <span><span class="key">L-Click</span></span></div>
+            <div class="row"><span>Pick</span> <span><span class="key">R-Click</span> Block</span></div>
             <div class="row"><span>Fast Fly</span> <span><span class="key">Shift</span></span></div>
         </div>
         
@@ -303,31 +325,45 @@
             <!-- Block Maker Content -->
             <div id="modal-content-block" style="display:none;">
                 <div class="setting-row">
-                    <input type="text" id="bm-name" placeholder="Block Name (e.g. Super Bounce)">
+                    <input type="text" id="bm-name" placeholder="Block Name (e.g. Mega Jump)">
                 </div>
-                <div class="setting-row">
-                    <label>Color</label>
-                    <input type="color" id="bm-color" value="#ffffff" style="width:50px; height:40px; padding:0;">
+                
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label class="label">Behavior</label>
+                        <select id="bm-type" style="width: 100%;">
+                            <option value="solid">Solid (Standard)</option>
+                            <option value="bounce">Bouncy</option>
+                            <option value="hazard">Hazard (Deadly)</option>
+                            <option value="ice">Ice (Slippery)</option>
+                            <option value="mud">Mud (Slow)</option>
+                            <option value="speed">Speed Pad</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                         <label class="label">Effect Strength</label>
+                        <input type="number" id="bm-force" value="1.5" step="0.1" style="width: 100%;">
+                    </div>
                 </div>
-                <div class="setting-row">
-                    <label>Behavior</label>
-                    <select id="bm-type" style="width: 150px;">
-                        <option value="solid">Solid (Normal)</option>
-                        <option value="bounce">Bouncy</option>
-                        <option value="hazard">Deadly (Lava)</option>
-                        <option value="ice">Slippery (Ice)</option>
-                        <option value="mud">Slow (Mud)</option>
-                        <option value="speed">Speed Pad</option>
-                    </select>
+
+                <div style="margin-top:15px;">
+                    <label class="label">Texture Editor (16x16)</label>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px; gap:5px;">
+                        <input type="color" id="bm-paint-color" value="#ffffff" style="height:30px; flex-grow:1;">
+                        <button class="btn" id="bm-fill-btn" onclick="toggleFillMode()" style="font-size: 12px; width: 80px;">🪣 Fill</button>
+                    </div>
+                    <div id="pixel-grid" onmouseleave="isPainting=false"></div>
                 </div>
-                 <div class="setting-row">
-                    <label>Force (Bounce/Speed)</label>
-                    <input type="number" id="bm-force" value="1.5" step="0.1" style="width: 60px;">
+
+                <div style="margin-top:15px;">
+                     <label class="label">Custom Script (On Touch)</label>
+                     <textarea id="bm-script" placeholder="// player.velocity.y = 20;"></textarea>
                 </div>
+
                  <div style="margin-top: 15px; border-top: 1px solid #333; padding-top: 10px;">
                     <div style="font-size: 12px; color: var(--ai); margin-bottom: 5px;">Or ask AI to configure:</div>
-                    <input type="text" id="bm-ai-prompt" placeholder="E.g. A pink block that kills you">
-                    <button class="btn ai" style="width:100%" onclick="generateBlockAI()">Generate Config ✨</button>
+                    <input type="text" id="bm-ai-prompt" placeholder="E.g. A green block that bounces you high">
+                    <button class="btn ai" style="width:100%; margin-top:5px;" onclick="generateBlockAI()">Generate Config ✨</button>
                 </div>
             </div>
 
@@ -410,7 +446,7 @@
 
 <script>
 /**
- * VOXELVERSE ENGINE v6.0
+ * VOXELVERSE ENGINE v7.1
  * Made by oiPoipoi Games
  */
 
@@ -439,7 +475,7 @@ let mode = 'edit';
 let project = {
     levels: [ { id: 'lvl1', name: 'Level 1', objects: [] } ],
     currentLevelId: 'lvl1',
-    customBlocks: [] // Store custom blocks here
+    customBlocks: []
 };
 let objects = []; 
 let selectedTool = 'brick';
@@ -451,10 +487,12 @@ let bullets = [];
 let pendingPlaceCoords = null; 
 let buildLayerY = 0; 
 let forceLayer = false;
-let buildScale = 1;
+let buildScale = { x: 1, y: 1, z: 1 };
 let isLightMode = false;
 let userApiKey = "";
 let aiEnabled = true;
+let isFillMode = false;
+let isPainting = false;
 
 // Physics State
 let player = {
@@ -468,6 +506,7 @@ let player = {
 };
 
 const input = { keys: {}, mouse: new THREE.Vector2(), mouseDown: false, rightDown: false };
+let fillStart = null; 
 
 // --- THREE.JS INIT ---
 const scene = new THREE.Scene();
@@ -506,6 +545,7 @@ scene.add(gridHelper);
 
 // --- MODAL SYSTEM ---
 let activeModalType = null;
+let painterPixels = new Array(256).fill('#ffffff'); // 16x16
 
 function openModal(type) {
     activeModalType = type;
@@ -519,9 +559,8 @@ function openModal(type) {
     
     modal.style.display = 'flex';
     input.value = '';
-    loading.style.display = 'none'; // reset loading
+    loading.style.display = 'none'; 
     
-    // Toggle content visibility
     defaultContent.style.display = 'none';
     exportContent.style.display = 'none';
     blockContent.style.display = 'none';
@@ -549,6 +588,7 @@ function openModal(type) {
     } else if (type === 'block-maker') {
         title.innerText = "Create Custom Block";
         blockContent.style.display = 'block';
+        initPixelGrid();
         document.getElementById('bm-name').focus();
     }
 }
@@ -607,6 +647,94 @@ function submitModal() {
     }
 }
 
+function toggleFillMode() {
+    isFillMode = !isFillMode;
+    const btn = document.getElementById('bm-fill-btn');
+    if(isFillMode) {
+        btn.classList.add('primary');
+        btn.style.border = "1px solid var(--accent)";
+    } else {
+        btn.classList.remove('primary');
+        btn.style.border = "1px solid var(--border-color)";
+    }
+}
+
+function initPixelGrid() {
+    const grid = document.getElementById('pixel-grid');
+    grid.innerHTML = '';
+    painterPixels.fill('#ffffff'); 
+
+    for(let i=0; i<256; i++) {
+        const d = document.createElement('div');
+        d.className = 'pixel-cell';
+        d.style.backgroundColor = painterPixels[i]; 
+        
+        d.onmousedown = (e) => {
+            e.preventDefault(); 
+            if(isFillMode) {
+                floodFill(i);
+            } else {
+                isPainting = true;
+                paintPixel(i);
+            }
+        };
+        
+        d.onmouseenter = () => {
+            if(isPainting && !isFillMode) {
+                paintPixel(i);
+            }
+        };
+        
+        d.onmouseup = () => {
+            isPainting = false;
+        };
+
+        grid.appendChild(d);
+    }
+    
+    isFillMode = false;
+    const btn = document.getElementById('bm-fill-btn');
+    if(btn) {
+        btn.classList.remove('primary');
+        btn.style.border = "";
+    }
+}
+
+function paintPixel(i) {
+    const col = document.getElementById('bm-paint-color').value;
+    painterPixels[i] = col;
+    document.getElementById('pixel-grid').children[i].style.backgroundColor = col;
+}
+
+function floodFill(startIndex) {
+    const targetColor = painterPixels[startIndex];
+    const replacementColor = document.getElementById('bm-paint-color').value;
+    // Normalize colors for comparison (simple check)
+    // Actually input color is hex. Array is hex. Should match.
+    if (targetColor === replacementColor) return;
+
+    const stack = [startIndex];
+    const seen = new Set(); // Prevent infinite loops if logic fails
+
+    while (stack.length > 0) {
+        const i = stack.pop();
+        if (seen.has(i)) continue;
+        seen.add(i);
+
+        if (painterPixels[i] === targetColor) {
+            paintPixel(i); // Update logic
+            
+            const x = i % 16;
+            const y = Math.floor(i / 16);
+            
+            if (x > 0) stack.push(i - 1);
+            if (x < 15) stack.push(i + 1);
+            if (y > 0) stack.push(i - 16);
+            if (y < 15) stack.push(i + 16);
+        }
+    }
+}
+
 // --- AI GENERATION ---
 async function generateLevelFromAI(prompt) {
     if (!userApiKey) {
@@ -619,10 +747,9 @@ async function generateLevelFromAI(prompt) {
     const loading = document.getElementById('loading-ai');
     loading.style.display = 'block';
     
-    // Improved Prompt
     const systemPrompt = `You are a Voxel Game Level Generator.
     Coordinates: x (horiz), y (vert, 0=floor), z (depth).
-    Available Blocks: 'brick', 'grass', 'wood', 'ice' (slippery), 'mud' (slow), 'lava' (kill), 'bounce' (jump), 'coin', 'spawn' (START), 'goal' (END), 'turret' (shoot), 'tp' (teleport), 'speed', 'sand', 'stone', 'log', 'leaves'.
+    Available Blocks: 'brick', 'grass', 'wood', 'ice' (slippery), 'mud' (slow), 'lava' (kill), 'bounce' (jump), 'coin', 'spawn' (START), 'goal' (END), 'turret' (shoot), 'tp' (teleport), 'speed', 'sand', 'stone', 'log', 'leaves', 'glass', 'light', 'ladder'.
     
     Task: Build a level based on the user request.
     Rules:
@@ -681,9 +808,9 @@ async function generateBlockAI() {
     btn.innerText = "Generating...";
     
     const systemPrompt = `You are a config generator for game blocks.
-    Return JSON ONLY: {"name": string, "color": hex_string, "type": string, "force": number}
+    Return JSON ONLY: {"name": string, "color": hex_string, "type": string, "force": number, "script": string}
     Types: 'solid', 'bounce', 'hazard', 'ice', 'mud', 'speed'.
-    Force is used for bounce height or speed multiplier (default 1.5).
+    Script: A short JS one-liner for custom effects on collision (optional). e.g., "player.vel.y=30;"
     Example: {"name": "Slime", "color": "#00ff00", "type": "bounce", "force": 2.0}
     `;
 
@@ -705,6 +832,7 @@ async function generateBlockAI() {
         document.getElementById('bm-color').value = conf.color;
         document.getElementById('bm-type').value = conf.type;
         document.getElementById('bm-force').value = conf.force || 1.5;
+        if(conf.script) document.getElementById('bm-script').value = conf.script;
         
     } catch(e) {
         showToast("AI Config Failed");
@@ -791,107 +919,126 @@ function resetSaveData() {
 
 // --- TEXTURE GENERATOR ---
 const textureCache = {};
-function getTexture(type, color, text) {
-    const key = type + color + (text || '');
+function getTexture(type, color, text, customPixels) {
+    const key = type + color + (text || '') + (customPixels ? 'custom' : '');
     if(textureCache[key]) return textureCache[key];
 
     const canvas = document.createElement('canvas');
     canvas.width = 128; canvas.height = 128; 
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = color;
-    ctx.fillRect(0,0,128,128);
+    if (customPixels) {
+        const scale = 128 / 16;
+        for(let i=0; i<256; i++) {
+            const x = (i % 16) * scale;
+            const y = Math.floor(i / 16) * scale;
+            ctx.fillStyle = customPixels[i];
+            ctx.fillRect(x, y, scale, scale);
+        }
+    } else {
+        ctx.fillStyle = color;
+        ctx.fillRect(0,0,128,128);
+        addNoise(ctx, 0.05);
 
-    // Apply Noise to all blocks slightly
-    addNoise(ctx, 0.05);
-
-    if (type === 'sign') {
-        ctx.fillStyle = "#e2e8f0";
-        ctx.fillRect(5,5,118,118); 
-        ctx.fillStyle = "#1e293b";
-        const content = text || "Sign";
-        let fontSize = 20;
-        ctx.font = `bold ${fontSize}px Arial`;
-        let textWidth = ctx.measureText(content).width;
-        while(textWidth > 100 && fontSize > 10) {
-            fontSize--;
+        if (type === 'sign') {
+            ctx.fillStyle = "#e2e8f0";
+            ctx.fillRect(5,5,118,118); 
+            ctx.fillStyle = "#1e293b";
+            const content = text || "Sign";
+            let fontSize = 20;
             ctx.font = `bold ${fontSize}px Arial`;
-            textWidth = ctx.measureText(content).width;
+            let textWidth = ctx.measureText(content).width;
+            while(textWidth > 100 && fontSize > 10) {
+                fontSize--;
+                ctx.font = `bold ${fontSize}px Arial`;
+                textWidth = ctx.measureText(content).width;
+            }
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(content, 64, 64);
+            ctx.strokeStyle = "#475569"; ctx.lineWidth = 5; ctx.strokeRect(5,5,118,118);
         }
-        ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText(content, 64, 64);
-        ctx.strokeStyle = "#475569"; ctx.lineWidth = 5; ctx.strokeRect(5,5,118,118);
-    }
-    else if (type === 'brick' || type === 'wood' || type === 'stone' || type === 'sand') {
-        ctx.strokeStyle = "rgba(0,0,0,0.2)";
-        ctx.lineWidth = 4;
-        ctx.strokeRect(0,0,128,128);
-        ctx.beginPath(); ctx.moveTo(0,64); ctx.lineTo(128,64); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(64,0); ctx.lineTo(64,64); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(64,64); ctx.lineTo(64,128); ctx.stroke(); 
-        if (type === 'stone') addNoise(ctx, 0.2); // Rougher
-        if (type === 'sand') addNoise(ctx, 0.3); // Grainy
-    } 
-    else if (type === 'log') {
-        // Tree Rings top
-        ctx.strokeStyle = "#5d4037"; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.arc(64,64,50,0,Math.PI*2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(64,64,30,0,Math.PI*2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(64,64,10,0,Math.PI*2); ctx.stroke();
-    }
-    else if (type === 'leaves') {
-        ctx.fillStyle = "rgba(0,0,0,0.2)";
-        for(let i=0; i<40; i++) ctx.fillRect(Math.random()*110, Math.random()*110, 15, 15);
-    }
-    else if (type === 'grass') {
-        ctx.fillStyle = "rgba(255,255,255,0.1)";
-        for(let i=0; i<100; i++) ctx.fillRect(Math.random()*128,Math.random()*128, 4, 6);
-    }
-    else if (type === 'hazard') {
-        ctx.fillStyle = "#fbbf24"; 
-        for(let i=-128; i<128; i+=32) {
-            ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i+16,0); ctx.lineTo(i+144,128); ctx.lineTo(i+128,128); ctx.fill();
+        else if (type === 'brick' || type === 'wood' || type === 'stone' || type === 'sand') {
+            ctx.strokeStyle = "rgba(0,0,0,0.2)";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(0,0,128,128);
+            ctx.beginPath(); ctx.moveTo(0,64); ctx.lineTo(128,64); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(64,0); ctx.lineTo(64,64); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(64,64); ctx.lineTo(64,128); ctx.stroke(); 
+            if (type === 'stone') addNoise(ctx, 0.2); 
+            if (type === 'sand') addNoise(ctx, 0.3); 
+        } 
+        else if (type === 'log') {
+            ctx.strokeStyle = "#5d4037"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(64,64,50,0,Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(64,64,30,0,Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(64,64,10,0,Math.PI*2); ctx.stroke();
         }
-    }
-    else if (type === 'bounce') {
-        ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.lineWidth=8;
-        ctx.beginPath(); ctx.arc(64,64,32,0,Math.PI*2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(64,64,16,0,Math.PI*2); ctx.stroke();
-    }
-    else if (type === 'speed') {
-        ctx.fillStyle = "rgba(255,255,255,0.3)";
-        ctx.beginPath(); ctx.moveTo(20,128); ctx.lineTo(64,0); ctx.lineTo(108,128); ctx.fill();
-    }
-    else if (type === 'turret') {
-        ctx.fillStyle = "#1e293b"; ctx.fillRect(16,16,96,96); 
-        ctx.fillStyle = "#ef4444"; ctx.beginPath(); ctx.arc(64,64,24,0,Math.PI*2); ctx.fill();
-        ctx.strokeStyle = "#475569"; ctx.lineWidth=6; ctx.strokeRect(16,16,96,96);
-    }
-    else if (type === 'teleport') {
-        ctx.fillStyle = "#1e1b4b"; ctx.fillRect(0,0,128,128);
-        ctx.strokeStyle = "#c084fc"; ctx.lineWidth=4;
-        for(let i=1; i<8; i++) {
-            ctx.beginPath(); ctx.arc(64,64, i*8, i*0.5, Math.PI+i*0.5); ctx.stroke();
+        else if (type === 'leaves') {
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            for(let i=0; i<40; i++) ctx.fillRect(Math.random()*110, Math.random()*110, 15, 15);
         }
-    }
-    else if (type === 'ice') {
-        ctx.fillStyle = "rgba(255,255,255,0.3)";
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(60,128); ctx.lineTo(128,0); ctx.fill();
-    }
-    else if (type === 'mud') {
-        addNoise(ctx, 0.4);
-    }
-    else if (type === 'goal') {
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0,0,64,64); ctx.fillRect(64,64,64,64);
-        ctx.fillStyle = '#000';
-        ctx.fillRect(64,0,64,64); ctx.fillRect(0,64,64,64);
-    }
-    else if (type === 'spawn') {
-        ctx.fillStyle = "#334155"; ctx.fillRect(0,0,128,128);
-        ctx.strokeStyle = "#38bdf8"; ctx.lineWidth=6;
-        ctx.beginPath(); ctx.arc(64,64,40,0,Math.PI*2); ctx.stroke();
-        ctx.fillStyle = "#38bdf8"; ctx.font="60px Arial"; ctx.textAlign="center"; ctx.fillText("H", 64, 84);
+        else if (type === 'grass') {
+            ctx.fillStyle = "rgba(255,255,255,0.1)";
+            for(let i=0; i<100; i++) ctx.fillRect(Math.random()*128,Math.random()*128, 4, 6);
+        }
+        else if (type === 'hazard') {
+            ctx.fillStyle = "#fbbf24"; 
+            for(let i=-128; i<128; i+=32) {
+                ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i+16,0); ctx.lineTo(i+144,128); ctx.lineTo(i+128,128); ctx.fill();
+            }
+        }
+        else if (type === 'bounce') {
+            ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.lineWidth=8;
+            ctx.beginPath(); ctx.arc(64,64,32,0,Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(64,64,16,0,Math.PI*2); ctx.stroke();
+        }
+        else if (type === 'speed') {
+            ctx.fillStyle = "rgba(255,255,255,0.3)";
+            ctx.beginPath(); ctx.moveTo(20,128); ctx.lineTo(64,0); ctx.lineTo(108,128); ctx.fill();
+        }
+        else if (type === 'turret') {
+            ctx.fillStyle = "#1e293b"; ctx.fillRect(16,16,96,96); 
+            ctx.fillStyle = "#ef4444"; ctx.beginPath(); ctx.arc(64,64,24,0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle = "#475569"; ctx.lineWidth=6; ctx.strokeRect(16,16,96,96);
+        }
+        else if (type === 'teleport') {
+            ctx.fillStyle = "#1e1b4b"; ctx.fillRect(0,0,128,128);
+            ctx.strokeStyle = "#c084fc"; ctx.lineWidth=4;
+            for(let i=1; i<8; i++) {
+                ctx.beginPath(); ctx.arc(64,64, i*8, i*0.5, Math.PI+i*0.5); ctx.stroke();
+            }
+        }
+        else if (type === 'ice') {
+            ctx.fillStyle = "rgba(255,255,255,0.3)";
+            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(60,128); ctx.lineTo(128,0); ctx.fill();
+        }
+        else if (type === 'mud') {
+            addNoise(ctx, 0.4);
+        }
+        else if (type === 'goal') {
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0,0,64,64); ctx.fillRect(64,64,64,64);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(64,0,64,64); ctx.fillRect(0,64,64,64);
+        }
+        else if (type === 'spawn') {
+            ctx.fillStyle = "#334155"; ctx.fillRect(0,0,128,128);
+            ctx.strokeStyle = "#38bdf8"; ctx.lineWidth=6;
+            ctx.beginPath(); ctx.arc(64,64,40,0,Math.PI*2); ctx.stroke();
+            ctx.fillStyle = "#38bdf8"; ctx.font="60px Arial"; ctx.textAlign="center"; ctx.fillText("H", 64, 84);
+        }
+        else if (type === 'ladder') {
+            ctx.strokeStyle = "#854d0e"; ctx.lineWidth = 8;
+            ctx.beginPath(); ctx.moveTo(32,0); ctx.lineTo(32,128); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(96,0); ctx.lineTo(96,128); ctx.stroke();
+            ctx.lineWidth = 6;
+            for(let i=16; i<128; i+=32) {
+                ctx.beginPath(); ctx.moveTo(32,i); ctx.lineTo(96,i); ctx.stroke();
+            }
+        }
+        else if (type === 'light') {
+            ctx.fillStyle = "#fef08a"; ctx.fillRect(32,32,64,64);
+        }
     }
 
     const tex = new THREE.CanvasTexture(canvas);
@@ -908,6 +1055,8 @@ function addNoise(ctx, alpha) {
 // --- TOOLS & PALETTE ---
 let TOOLS = {
     'eraser':{ name: 'Eraser', type: 'tool', color: '#ef4444', icon: '❌', isEraser: true },
+    'pick':  { name: 'Picker', type: 'tool', color: '#6366f1', icon: '💉', isPicker: true },
+    'fill':  { name: 'Box Fill', type: 'tool', color: '#ec4899', icon: '🔲', isFill: true },
     'sign':  { name: 'Sign', type: 'solid', color: '#64748b', tex: 'sign', icon: '🪧', shape: 'sign' },
     'brick': { name: 'Brick', type: 'solid', color: '#8d6e63', tex: 'brick', icon: '🧱' },
     'grass': { name: 'Grass', type: 'solid', color: '#4ade80', tex: 'grass', icon: '🌿' },
@@ -916,6 +1065,9 @@ let TOOLS = {
     'sand':  { name: 'Sand',  type: 'solid', color: '#fde047', tex: 'sand', icon: '🏜️' },
     'log':   { name: 'Log',   type: 'solid', color: '#78350f', tex: 'log', icon: '🌳' },
     'leaves':{ name: 'Leaves',type: 'solid', color: '#166534', tex: 'leaves', icon: '🍃' },
+    'glass': { name: 'Glass', type: 'solid', color: '#a5f3fc', tex: 'ice', icon: '🧊', opacity: 0.3 },
+    'light': { name: 'Light', type: 'solid', color: '#fef08a', tex: 'light', icon: '💡', emissive: 0xffffee },
+    'ladder':{ name: 'Ladder', type: 'climb', color: '#a16207', tex: 'ladder', icon: '🪜', isClimb: true },
     'ice':   { name: 'Ice',   type: 'solid', color: '#cffafe', tex: 'ice', icon: '❄️', friction: 1.0 },
     'mud':   { name: 'Mud',   type: 'solid', color: '#5D4037', tex: 'mud', icon: '💩', speed: 0.4 },
     'lava':  { name: 'Lava',  type: 'hazard', color: '#ef4444', tex: 'hazard', icon: '🔥', emissive: 0xaa0000 },
@@ -933,7 +1085,7 @@ const DEV_TOOLS = {
 
 function initPalette() {
     const p = document.getElementById('palette');
-    if (!p) return; 
+    if (!p) return; // Guard for export mode
     p.innerHTML = '';
     
     // Add custom blocks to available tools
@@ -963,21 +1115,24 @@ function createCustomBlockFromUI() {
     const color = document.getElementById('bm-color').value;
     const type = document.getElementById('bm-type').value;
     const force = parseFloat(document.getElementById('bm-force').value) || 1.0;
+    const script = document.getElementById('bm-script').value;
     
     const id = 'custom_' + Date.now();
     const newBlock = {
         id: id,
         name: name,
         color: color,
-        type: type === 'hazard' || type === 'bounce' || type === 'speed' ? 'solid' : 'solid', // Visual type base
-        tex: 'brick', // Default texture base
+        type: type === 'hazard' || type === 'bounce' || type === 'speed' ? 'solid' : 'solid', 
+        tex: 'custom', // Trigger custom texture logic
         icon: '📦',
         isCustom: true,
+        customPixels: [...painterPixels], // Save pixel data array
         // Properties
         gameType: type === 'hazard' ? 'hazard' : 'solid',
         bounce: type === 'bounce' ? force : 0,
-        friction: type === 'ice' ? 0.05 : (type === 'mud' ? 50 : 10), // Fix logic here
-        speed: type === 'mud' ? 0.4 : (type === 'speed' ? force : 1)
+        friction: type === 'ice' ? 0.05 : (type === 'mud' ? 50 : 10), 
+        speed: type === 'mud' ? 0.4 : (type === 'speed' ? force : 1),
+        script: script
     };
     
     // Correct properties based on selection
@@ -1006,13 +1161,15 @@ function toggleForceLayer(checked) {
     forceLayer = checked;
 }
 
-function updateBuildScale(val) {
-    buildScale = parseFloat(val) || 1;
+function updateBuildScale() {
+    buildScale.x = parseFloat(document.getElementById('scale-x').value) || 1;
+    buildScale.y = parseFloat(document.getElementById('scale-y').value) || 1;
+    buildScale.z = parseFloat(document.getElementById('scale-z').value) || 1;
 }
 
 // --- OBJECT MANAGEMENT ---
 
-function createMesh(type, x, y, z, text, scaleVal = 1) {
+function createMesh(type, x, y, z, text, scaleVal = {x:1,y:1,z:1}) {
     // Check main tools, dev tools, and custom blocks
     let data = TOOLS[type] || DEV_TOOLS[type];
     if (!data && project.customBlocks) {
@@ -1022,24 +1179,28 @@ function createMesh(type, x, y, z, text, scaleVal = 1) {
     if (!data) return null;
     
     let geo, mat;
-    const s = scaleVal;
+
+    const sx = scaleVal.x || 1;
+    const sy = scaleVal.y || 1;
+    const sz = scaleVal.z || 1;
 
     if (data.shape === 'coin') {
-        geo = new THREE.CylinderGeometry(0.3 * s, 0.3 * s, 0.05 * s, 16);
+        geo = new THREE.CylinderGeometry(0.3 * Math.min(sx,sz), 0.3 * Math.min(sx,sz), 0.05 * sy, 16);
         geo.rotateX(Math.PI/2);
     } else if (data.shape === 'cylinder') {
-        geo = new THREE.CylinderGeometry(0.4 * s, 0.4 * s, 0.2 * s, 16);
-        geo.translate(0, 0.1 * s, 0); 
+        geo = new THREE.CylinderGeometry(0.4 * Math.min(sx,sz), 0.4 * Math.min(sx,sz), 0.2 * sy, 16);
+        geo.translate(0, 0.1 * sy, 0); 
     } else if (data.shape === 'sign') {
-        geo = new THREE.BoxGeometry(0.8 * s, 0.8 * s, 0.1 * s);
-        geo.translate(0, 0.5 * s, 0);
+        geo = new THREE.BoxGeometry(0.8 * sx, 0.8 * sy, 0.1 * sz);
+        geo.translate(0, 0.5 * sy, 0);
     } else {
-        geo = new THREE.BoxGeometry(1 * s, 1 * s, 1 * s);
-        geo.translate(0, 0.5 * s, 0);
+        geo = new THREE.BoxGeometry(1 * sx, 1 * sy, 1 * sz);
+        geo.translate(0, 0.5 * sy, 0);
     }
 
     const matProps = { color: data.color };
-    if (data.tex) matProps.map = getTexture(data.tex, data.color, text); 
+    // Pass custom pixels if available
+    if (data.tex) matProps.map = getTexture(data.tex, data.color, text, data.customPixels); 
     if (data.opacity) { matProps.transparent = true; matProps.opacity = data.opacity; }
     if (data.emissive) { matProps.emissive = data.emissive; matProps.emissiveIntensity = 0.5; }
     
@@ -1058,9 +1219,11 @@ function createMesh(type, x, y, z, text, scaleVal = 1) {
         speed: data.speed !== undefined ? data.speed : 1,
         isTurret: data.isTurret,
         isTP: data.isTP,
+        isClimb: data.isClimb,
         lastFire: 0,
         text: text,
-        scale: s
+        scale: {x:sx, y:sy, z:sz},
+        script: data.script
     };
     
     mesh.scale.set(0,0,0);
@@ -1069,9 +1232,10 @@ function createMesh(type, x, y, z, text, scaleVal = 1) {
     return mesh;
 }
 
-function addObject(x, y, z, type, text = null) {
-    if (type === 'eraser') return; 
+function addObject(x, y, z, type, text = null, scaleOverride = null) {
+    if (type === 'eraser' || type === 'pick' || type === 'fill') return; 
 
+    // LIMIT CHECK
     if (!devMode && objects.length >= LIMITS.BLOCKS) {
         showToast("Block Limit Reached! (2000)");
         return;
@@ -1089,7 +1253,8 @@ function addObject(x, y, z, type, text = null) {
         if(oldSpawn) removeObject(oldSpawn);
     }
 
-    const mesh = createMesh(type, x, y, z, text, buildScale);
+    const s = scaleOverride || buildScale;
+    const mesh = createMesh(type, x, y, z, text, s);
     if(mesh) {
         scene.add(mesh);
         objects.push(mesh);
@@ -1125,6 +1290,7 @@ function getLevelList() {
 }
 
 function saveCurrentLevelState() {
+    // Safety check: if level was deleted, currentLevelId might point to nothing
     const lvl = project.levels.find(l => l.id === project.currentLevelId);
     if(!lvl) return; 
     
@@ -1134,7 +1300,7 @@ function saveCurrentLevelState() {
         y: o.position.y,
         z: o.position.z,
         text: o.userData.text,
-        scale: o.userData.scale 
+        scale: o.userData.scale // Save vector scale
     }));
 }
 
@@ -1152,7 +1318,11 @@ function loadLevel(id, skipSave = false) {
     project.currentLevelId = id;
     
     lvl.objects.forEach(data => {
-        const s = data.scale || 1;
+        // Pass saved scale or default 1
+        let s = data.scale;
+        if (typeof s === 'number') s = {x:s, y:s, z:s};
+        if (!s) s = {x:1, y:1, z:1};
+
         const mesh = createMesh(data.type, data.x, data.y, data.z, data.text, s);
         if(mesh) {
             scene.add(mesh);
@@ -1181,7 +1351,7 @@ function deleteLevel() {
     
     const newId = project.levels[0].id;
     project.currentLevelId = newId; 
-    objects = []; 
+    objects = []; // Important: Clear objects so we don't save old state to new ID
     loadLevel(newId, true); 
 }
 
@@ -1226,6 +1396,7 @@ function performExport(title, btnText) {
     const currentLvl = project.levels.find(l => l.id === project.currentLevelId);
     if (!currentLvl.objects.some(o => o.type === 'spawn')) {
         alert(`Warning: Current level (${currentLvl.name}) has no 'Start' point.`);
+        // Don't return, just warn.
     }
 
     const json = JSON.stringify(project);
@@ -1283,18 +1454,18 @@ function handleFileSelect(input) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const content = e.target.result;
-        const match = content.match(/const\s+raw\s*=\s*"([^"]+)"/);
+        // More robust string matching finding the base64 payload
+        const startIndex = content.indexOf('const raw = "') + 13;
+        const endIndex = content.indexOf('";', startIndex);
         
-        if (match && match[1]) {
+        if (startIndex > 12 && endIndex > startIndex) {
             try {
-                const raw = match[1];
+                const raw = content.substring(startIndex, endIndex);
                 const json = decodeURIComponent(Array.prototype.map.call(atob(raw), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
                 const importedProject = JSON.parse(json);
                 
                 project = importedProject;
-                if(!project.customBlocks) project.customBlocks = [];
-                
-                initPalette(); // Load imported custom blocks
+                if(project.customBlocks) initPalette(); 
                 
                 const startId = project.currentLevelId || project.levels[0].id;
                 loadLevel(startId); 
@@ -1358,37 +1529,53 @@ function updateEditor(dt) {
     
     if (input.rightDown) {
         const sensitivity = 0.003;
+        // Rotation handled in mousemove
     }
 
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+
+    if (input.keys['KeyW']) camera.position.add(forward.multiplyScalar(speed * dt));
+    if (input.keys['KeyS']) camera.position.add(forward.multiplyScalar(-speed * dt));
+    if (input.keys['KeyA']) camera.position.add(right.multiplyScalar(-speed * dt));
+    if (input.keys['KeyD']) camera.position.add(right.multiplyScalar(speed * dt));
     
-    // INPUT FIX: Only move if not typing in input
-    if (document.activeElement.tagName !== 'INPUT') {
-        if (input.keys['KeyW']) camera.position.add(forward.multiplyScalar(speed * dt));
-        if (input.keys['KeyS']) camera.position.add(forward.multiplyScalar(-speed * dt));
-        if (input.keys['KeyA']) camera.position.add(right.multiplyScalar(-speed * dt));
-        if (input.keys['KeyD']) camera.position.add(right.multiplyScalar(speed * dt));
-        
-        if (input.keys['Space']) camera.position.y += speed * dt;
-        if (input.keys['ControlLeft'] || input.keys['ControlRight']) camera.position.y -= speed * dt;
-    }
+    if (input.keys['Space']) camera.position.y += speed * dt;
+    if (input.keys['ControlLeft'] || input.keys['ControlRight']) camera.position.y -= speed * dt;
 
     const ray = new THREE.Raycaster();
     ray.setFromCamera(input.mouse, camera);
     const intersects = ray.intersectObjects(objects);
     
-    if (selectedTool === 'eraser') {
+    if (selectedTool === 'eraser' || selectedTool === 'pick') {
         if (intersects.length > 0) {
             const hitObj = intersects[0].object;
             ghostBox.position.copy(hitObj.position);
-            const s = hitObj.userData.scale || 1;
-            ghostBox.scale.set(s*1.05, s*1.05, s*1.05); 
-            ghostBox.material.color.setHex(0xff0000);
+            
+            // Respect scale for highlighting
+            const s = hitObj.userData.scale || {x:1,y:1,z:1};
+            ghostBox.scale.set(s.x*1.05, s.y*1.05, s.z*1.05); 
+            
+            const color = selectedTool === 'eraser' ? 0xff0000 : 0x00ff00;
+            ghostBox.material.color.setHex(color);
             ghostBox.visible = true;
             
             if (input.mouseDown) {
-                removeObject(hitObj);
+                if (selectedTool === 'eraser') {
+                     removeObject(hitObj);
+                } else if (selectedTool === 'pick') {
+                     // Pick logic
+                     selectedTool = hitObj.userData.type;
+                     // UI Update
+                     document.querySelectorAll('.tool-item').forEach(e => e.classList.remove('selected'));
+                     // Find and highlight
+                     // Update size inputs
+                     document.getElementById('scale-x').value = s.x;
+                     document.getElementById('scale-y').value = s.y;
+                     document.getElementById('scale-z').value = s.z;
+                     updateBuildScale();
+                     showToast("Picked: " + selectedTool);
+                }
                 input.mouseDown = false;
             }
         } else {
@@ -1408,6 +1595,7 @@ function updateEditor(dt) {
             targetPos.copy(hit.point).add(hit.face.normal.multiplyScalar(0.5));
             valid = true;
         } else {
+            // Default plane check
             const plane = new THREE.Plane(new THREE.Vector3(0,1,0), -buildLayerY);
             const intersection = ray.ray.intersectPlane(plane, targetPos);
             valid = !!intersection;
@@ -1415,9 +1603,12 @@ function updateEditor(dt) {
 
         if (valid) {
             const x = Math.round(targetPos.x);
-            const y = Math.floor(targetPos.y + 0.01); 
+            // If normal placement, snap Y. If force layer, stick to buildLayerY.
+            // Using Math.floor/round on targetPos handles both generally if plane is at Integer Y.
+            const y = Math.floor(targetPos.y + 0.01); // Epsilon for float issues
             const z = Math.round(targetPos.z);
             
+            // Limit Check for Ghost
             if (!devMode) {
                 if (Math.abs(x) > LIMITS.SIZE || Math.abs(z) > LIMITS.SIZE) valid = false;
                 if (y > LIMITS.LAYER_MAX || y < LIMITS.LAYER_MIN) valid = false;
@@ -1425,16 +1616,80 @@ function updateEditor(dt) {
 
             if (valid) {
                 ghostBox.position.set(x, y, z);
-                ghostBox.scale.set(buildScale, buildScale, buildScale);
-                ghostBox.material.color.setHex(0xffffff);
+                
+                // Live resize ghost based on Fill or Normal
+                if (selectedTool === 'fill' && fillStart) {
+                    // Box Fill Preview
+                    const minX = Math.min(fillStart.x, x);
+                    const maxX = Math.max(fillStart.x, x);
+                    const minY = Math.min(fillStart.y, y);
+                    const maxY = Math.max(fillStart.y, y);
+                    const minZ = Math.min(fillStart.z, z);
+                    const maxZ = Math.max(fillStart.z, z);
+                    
+                    const sizeX = (maxX - minX) + 1;
+                    const sizeY = (maxY - minY) + 1;
+                    const sizeZ = (maxZ - minZ) + 1;
+                    
+                    ghostBox.position.set(minX, minY, minZ);
+                    // Standard mesh is 1x1x1 translated 0.5 up. 
+                    // We need to scale to fit box. 
+                    // Position is bottom-left corner of box.
+                    
+                    // Reset mesh pivot is at bottom center relative to mesh pos.
+                    // Actually createMesh uses center. 
+                    
+                    // Simple Ghost Visual for box fill is tricky with pivot offsets.
+                    // Just show a 1x1 at target for now, or sophisticated scaling:
+                    ghostBox.scale.set(sizeX, sizeY, sizeZ);
+                    // Adjust position to center of mass
+                    ghostBox.position.set(minX + (sizeX-1)/2, minY, minZ + (sizeZ-1)/2); 
+                    
+                    ghostBox.material.color.setHex(0xff00ff);
+                } else {
+                    // Normal Build Ghost
+                    ghostBox.scale.set(buildScale.x, buildScale.y, buildScale.z);
+                    ghostBox.material.color.setHex(0xffffff);
+                }
+                
                 ghostBox.visible = true;
 
                 if (input.mouseDown) {
                     if (selectedTool === 'sign') {
                         pendingPlaceCoords = {x, y, z};
                         openModal('sign');
-                    } else if (selectedTool === 'ai-gen') {
-                        // handled by modal
+                    } else if (selectedTool === 'fill') {
+                        if (!fillStart) {
+                            fillStart = {x, y, z};
+                            showToast("Start Point Set. Click End Point.");
+                        } else {
+                            // Perform Fill
+                            const minX = Math.min(fillStart.x, x);
+                            const maxX = Math.max(fillStart.x, x);
+                            const minY = Math.min(fillStart.y, y);
+                            const maxY = Math.max(fillStart.y, y);
+                            const minZ = Math.min(fillStart.z, z);
+                            const maxZ = Math.max(fillStart.z, z);
+                            
+                            const count = (maxX-minX+1)*(maxY-minY+1)*(maxZ-minZ+1);
+                            if (count > 500) {
+                                alert("Too many blocks! (Max 500)");
+                            } else {
+                                // Default fill block is Brick unless picked otherwise? 
+                                // Let's assume we fill with 'brick' or add a sub-selection?
+                                // For now, fill with current default tool if it's solid, else brick.
+                                const fillType = 'brick'; 
+                                
+                                for(let ix=minX; ix<=maxX; ix++) {
+                                    for(let iy=minY; iy<=maxY; iy++) {
+                                        for(let iz=minZ; iz<=maxZ; iz++) {
+                                            addObject(ix, iy, iz, fillType);
+                                        }
+                                    }
+                                }
+                            }
+                            fillStart = null;
+                        }
                     } else {
                         addObject(x, y, z, selectedTool);
                     }
@@ -1552,6 +1807,8 @@ function updateGame(dt) {
         } else {
             if(player.vel.y < 0) { // Landing
                 player.onGround = true;
+                // Snap to top of box
+                // We need the precise top of the colliding box
                 player.pos.y = colY.box.max.y; 
                 player.vel.y = 0;
                 
@@ -1579,6 +1836,14 @@ function updateGame(dt) {
 
     camera.position.copy(player.pos);
     camera.position.y += 1.5; 
+
+    // Custom Script Handling
+    if(player.onGround && groundCheck && groundCheck.userData.script) {
+        try {
+            // Safe(r) eval
+            new Function('player', 'block', groundCheck.userData.script)(player, groundCheck.userData);
+        } catch(e) {}
+    }
 
     const now = performance.now();
     objects.forEach(o => {
@@ -1642,10 +1907,11 @@ function checkCol(pos) {
     for(let o of objects) {
         if (!o.visible || o.userData.gameType === 'spawn') continue;
         
-        const s = o.userData.scale || 1;
+        const s = o.userData.scale || {x:1,y:1,z:1};
         const box = new THREE.Box3();
-        box.min.set(o.position.x - 0.5*s, o.position.y, o.position.z - 0.5*s);
-        box.max.set(o.position.x + 0.5*s, o.position.y + s, o.position.z + 0.5*s);
+        // Box is centered on X/Z but starts at Y
+        box.min.set(o.position.x - 0.5*s.x, o.position.y, o.position.z - 0.5*s.z);
+        box.max.set(o.position.x + 0.5*s.x, o.position.y + s.y, o.position.z + 0.5*s.z);
 
         if (box.intersectsBox(playerBox)) {
             if (o.userData.gameType === 'collectible') {
@@ -1662,6 +1928,16 @@ function checkCol(pos) {
             if (o.userData.gameType === 'hazard') {
                 if (!godMode) restartLevel();
                 return null;
+            }
+
+            if (o.userData.isClimb) {
+                // Allow walking through but maybe set flag? 
+                // For now solid to keep simple or we can implement ladder logic
+                // If it's a ladder, we treat it as non-solid for X/Z but handle vertical?
+                // Simplest Voxel logic: Ladders are solid blocks you jump on.
+                // Or if we want climb:
+                if(input.keys['KeyW']) player.vel.y = 5;
+                return null; // Passthrough
             }
 
             return { userData: o.userData, box: box };
@@ -1814,7 +2090,7 @@ window.addEventListener('resize', () => {
 });
 
 window.addEventListener('keydown', e => {
-    if(document.activeElement.tagName === 'INPUT') return; // FIX: Don't move while typing
+    if(document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return; 
     input.keys[e.code] = true;
 });
 
