@@ -7,28 +7,45 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --bg-dark: #0f172a;
-            --panel-bg: rgba(15, 23, 42, 0.95);
+            /* Dark Theme (Default) */
+            --bg-main: #0f172a;
+            --bg-panel: rgba(15, 23, 42, 0.95);
+            --bg-element: #1e293b;
+            --bg-element-hover: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            
             --accent: #38bdf8;
             --accent-hover: #0ea5e9;
             --danger: #ef4444;
             --warning: #f59e0b;
-            --text: #f8fafc;
-            --border: #334155;
             --dev: #eab308;
         }
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-dark); color: var(--text); user-select: none; }
+
+        body.light-mode {
+            /* Light Theme */
+            --bg-main: #f1f5f9;
+            --bg-panel: rgba(255, 255, 255, 0.95);
+            --bg-element: #ffffff;
+            --bg-element-hover: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #cbd5e1;
+        }
+
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-main); color: var(--text-main); user-select: none; transition: background 0.3s, color 0.3s; }
         
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; }
         
         #toolbar { 
             pointer-events: auto; 
-            background: var(--panel-bg); 
+            background: var(--bg-panel); 
             padding: 8px 16px; 
             display: flex; 
             gap: 12px; 
             align-items: center; 
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border-color);
             height: 54px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
@@ -44,37 +61,39 @@
         }
 
         .btn {
-            background: #1e293b; border: 1px solid var(--border); color: var(--text); padding: 8px 16px; 
+            background: var(--bg-element); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 16px; 
             border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;
             display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         }
-        .btn:hover { background: #334155; transform: translateY(-1px); }
+        .btn:hover { background: var(--bg-element-hover); transform: translateY(-1px); }
         .btn:active { transform: translateY(0); }
         
         .btn.primary { background: var(--accent); color: #0f172a; border: none; }
-        .btn.primary:hover { background: var(--accent-hover); box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+        .btn.primary:hover { background: var(--accent-hover); box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); color: white; }
         
         .btn.danger { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border-color: rgba(239, 68, 68, 0.3); }
+        body.light-mode .btn.danger { color: #dc2626; }
         .btn.danger:hover { background: rgba(239, 68, 68, 0.25); }
         
         .btn.dev { background: rgba(234, 179, 8, 0.15); color: #fde047; border-color: rgba(234, 179, 8, 0.3); }
+        body.light-mode .btn.dev { color: #ca8a04; }
         .btn.dev:hover { background: rgba(234, 179, 8, 0.25); box-shadow: 0 0 10px rgba(234, 179, 8, 0.3); }
 
         select, input[type="number"], input[type="text"] {
-            background: #1e293b; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 8px; outline: none; cursor: pointer;
+            background: var(--bg-element); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: 8px; outline: none; cursor: pointer;
         }
         
-        .control-group { display: flex; align-items: center; gap: 8px; background: #1e293b; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); }
-        .label { font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; }
-        .checkbox-wrapper { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 600; color: #cbd5e1; }
+        .control-group { display: flex; align-items: center; gap: 8px; background: var(--bg-element); padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .label { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+        .checkbox-wrapper { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-muted); }
         input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; }
 
         #palette {
             pointer-events: auto;
             position: absolute; left: 16px; top: 80px; bottom: 40px;
             width: 96px;
-            background: var(--panel-bg);
-            border: 1px solid var(--border);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
             border-radius: 16px;
             display: flex; flex-direction: column; gap: 8px; padding: 12px 8px;
             overflow-y: auto;
@@ -84,40 +103,40 @@
 
         .tool-item {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: rgba(255,255,255,0.03); border: 1px solid transparent;
+            background: rgba(125,125,125,0.05); border: 1px solid transparent;
             border-radius: 10px; padding: 10px 4px; cursor: pointer; transition: all 0.2s;
             position: relative;
         }
-        .tool-item:hover { background: rgba(255,255,255,0.08); }
+        .tool-item:hover { background: rgba(125,125,125,0.1); }
         .tool-item.selected { background: rgba(56, 189, 248, 0.15); border-color: var(--accent); }
         .tool-item.dev-item { border: 1px dashed var(--dev); }
         
-        .tool-icon { font-size: 26px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
-        .tool-label { font-size: 11px; color: #94a3b8; text-align: center; font-weight: 600; }
+        .tool-icon { font-size: 26px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+        .tool-label { font-size: 11px; color: var(--text-muted); text-align: center; font-weight: 600; }
         .tool-item.selected .tool-label { color: var(--accent); }
 
         #controls-info {
             position: absolute; bottom: 20px; right: 20px;
-            background: rgba(15, 23, 42, 0.8); padding: 15px; border-radius: 12px;
-            font-size: 12px; color: #cbd5e1; pointer-events: none;
-            border: 1px solid var(--border);
+            background: var(--bg-panel); padding: 15px; border-radius: 12px;
+            font-size: 12px; color: var(--text-muted); pointer-events: none;
+            border: 1px solid var(--border-color);
             backdrop-filter: blur(4px);
         }
-        .key { background: #334155; padding: 2px 6px; border-radius: 4px; color: white; font-family: monospace; border-bottom: 2px solid #1e293b; }
+        .key { background: var(--bg-element-hover); padding: 2px 6px; border-radius: 4px; color: var(--text-main); font-family: monospace; border-bottom: 2px solid var(--border-color); }
         .row { margin-bottom: 6px; display: flex; justify-content: space-between; width: 220px; }
 
         #credits {
             position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
-            font-size: 12px; color: rgba(255,255,255,0.3); font-weight: 600; pointer-events: none;
-            text-transform: uppercase; letter-spacing: 1px;
+            font-size: 12px; color: var(--text-muted); font-weight: 600; pointer-events: none;
+            text-transform: uppercase; letter-spacing: 1px; opacity: 0.5;
         }
 
         #play-ui { display: none; position: absolute; top: 20px; left: 50%; transform: translateX(-50%); }
         .score-pill { 
-            background: rgba(15, 23, 42, 0.8); padding: 10px 24px; border-radius: 30px; 
+            background: var(--bg-panel); padding: 10px 24px; border-radius: 30px; 
             border: 2px solid var(--accent); font-size: 20px; font-weight: bold; 
-            display: flex; align-items: center; gap: 10px;
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.3); color: white;
+            display: flex; align-items: center; gap: 10px; color: var(--text-main);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
         }
 
         #game-over { 
@@ -154,24 +173,24 @@
             align-items: center; justify-content: center; z-index: 200; pointer-events: auto;
         }
         .modal {
-            background: #1e293b; padding: 24px; border-radius: 16px; width: 320px;
-            border: 1px solid var(--border); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+            background: var(--bg-element); padding: 24px; border-radius: 16px; width: 320px;
+            border: 1px solid var(--border-color); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
         }
-        .modal h3 { margin-top: 0; color: white; margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .modal h3 { margin-top: 0; color: var(--text-main); margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
         .modal input[type="text"], .modal input[type="number"] { 
-            width: 100%; padding: 10px; margin-bottom: 16px; background: #0f172a; 
-            border: 1px solid var(--border); color: white; border-radius: 8px; box-sizing: border-box;
+            width: 100%; padding: 10px; margin-bottom: 16px; background: var(--bg-main); 
+            border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; box-sizing: border-box;
         }
         .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
-        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 14px; color: #cbd5e1; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 14px; color: var(--text-muted); }
 
         /* Start Screen for Exported Games */
         #start-screen {
-            display: none; position: absolute; inset: 0; background: #0f172a;
+            display: none; position: absolute; inset: 0; background: var(--bg-main);
             align-items: center; justify-content: center; flex-direction: column; z-index: 300; pointer-events: auto;
         }
         #start-screen h1 { font-size: 60px; margin: 0 0 20px 0; color: var(--accent); text-shadow: 0 0 30px var(--accent); }
-        #start-screen p { color: #94a3b8; margin-bottom: 40px; }
+        #start-screen p { color: var(--text-muted); margin-bottom: 40px; }
 
         body.exported #toolbar, 
         body.exported #palette, 
@@ -186,13 +205,14 @@
     <div id="ui-layer">
         <div id="toolbar">
             <div class="logo">VoxelVerse</div>
-            <div style="width: 1px; height: 20px; background: #334155; margin: 0 5px;"></div>
+            <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
             
             <select id="level-select" onchange="switchLevel(this.value)"></select>
             <button class="btn" onclick="openModal('level')" title="New Level">➕</button>
             <button class="btn danger" onclick="deleteLevel()" title="Delete Level">🗑️</button>
+            <button class="btn danger" onclick="clearCurrentLevel()" title="Clear All Blocks">🧹</button>
             
-            <div style="width: 1px; height: 20px; background: #334155; margin: 0 5px;"></div>
+            <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
             
             <div class="control-group">
                 <span class="label">Lyr</span>
@@ -212,7 +232,7 @@
             <button class="btn" onclick="exportGame()" title="Export HTML">📦 Export</button>
             <button class="btn" onclick="saveProject()">💾 Save</button>
             <button class="btn" onclick="openSettings()" title="Settings">⚙️</button>
-            <div style="width: 1px; height: 20px; background: #334155; margin: 0 5px;"></div>
+            <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
             <button class="btn primary" id="btn-play" onclick="togglePlayMode()">▶ PLAY</button>
         </div>
 
@@ -260,13 +280,18 @@
         <div class="modal">
             <h3>Settings</h3>
             <div class="setting-row">
+                <label class="checkbox-wrapper">
+                    <input type="checkbox" id="light-mode-toggle" onchange="toggleTheme(this.checked)"> Light Mode
+                </label>
+            </div>
+            <div class="setting-row">
                 <span>Block Count:</span> <span id="block-count-display">0 / 2000</span>
             </div>
             <div class="setting-row">
                 <input type="text" id="dev-code-input" placeholder="Dev Code..." style="margin-bottom:0; width: 60%;">
                 <button class="btn" onclick="checkDevCode()">Unlock</button>
             </div>
-            <div id="dev-controls" style="display:none; margin-top:15px; border-top:1px solid #334155; padding-top:15px;">
+            <div id="dev-controls" style="display:none; margin-top:15px; border-top:1px solid var(--border-color); padding-top:15px;">
                 <div style="color:var(--dev); font-weight:bold; margin-bottom:10px;">DEV MODE UNLOCKED</div>
                 <label class="checkbox-wrapper">
                     <input type="checkbox" id="dev-toggle" checked onchange="toggleDevMode(this.checked)"> Enable No Limits
@@ -297,7 +322,7 @@
 
 <script>
 /**
- * VOXELVERSE ENGINE v5.1
+ * VOXELVERSE ENGINE v5.2
  * Made by oiPoipoi Games
  */
 
@@ -309,13 +334,14 @@ const CONFIG = {
     jumpForce: 14,
     colors: {
         sky: 0x0f172a,
-        grid: 0x1e293b
+        grid: 0x1e293b,
+        skyLight: 0xf1f5f9
     }
 };
 
 const LIMITS = {
     BLOCKS: 2000,
-    LAYER_MAX: 20,
+    LAYER_MAX: 100, // Increased layer limit
     LAYER_MIN: -5,
     SIZE: 50 // World bound X/Z
 };
@@ -337,6 +363,7 @@ let pendingPlaceCoords = null; // For modal flow
 let buildLayerY = 0; // For mid-air placement
 let forceLayer = false;
 let buildScale = 1;
+let isLightMode = false;
 
 // Physics State
 let player = {
@@ -442,6 +469,7 @@ function submitModal() {
 function openSettings() {
     document.getElementById('settings-overlay').style.display = 'flex';
     document.getElementById('block-count-display').innerText = `${objects.length} / ${LIMITS.BLOCKS}`;
+    document.getElementById('light-mode-toggle').checked = isLightMode;
     
     if(devMode) {
         document.getElementById('dev-controls').style.display = 'block';
@@ -471,6 +499,19 @@ function toggleDevMode(checked) {
     devMode = checked;
     if(devMode) showToast("Limits Disabled");
     else showToast("Limits Enabled");
+}
+
+function toggleTheme(isLight) {
+    isLightMode = isLight;
+    if (isLight) {
+        document.body.classList.add('light-mode');
+        scene.background = new THREE.Color(CONFIG.colors.skyLight);
+        scene.fog = new THREE.FogExp2(CONFIG.colors.skyLight, 0.02);
+    } else {
+        document.body.classList.remove('light-mode');
+        scene.background = new THREE.Color(CONFIG.colors.sky);
+        scene.fog = new THREE.FogExp2(CONFIG.colors.sky, 0.02);
+    }
 }
 
 // --- TEXTURE GENERATOR ---
