@@ -9,7 +9,7 @@
         :root {
             --bg-dark: #0f172a;
             --panel-bg: rgba(15, 23, 42, 0.95);
-            --accent: #38bdf8; /* Cyan for VoxelVerse */
+            --accent: #38bdf8;
             --accent-hover: #0ea5e9;
             --danger: #ef4444;
             --warning: #f59e0b;
@@ -60,9 +60,14 @@
         .btn.dev { background: rgba(234, 179, 8, 0.15); color: #fde047; border-color: rgba(234, 179, 8, 0.3); }
         .btn.dev:hover { background: rgba(234, 179, 8, 0.25); box-shadow: 0 0 10px rgba(234, 179, 8, 0.3); }
 
-        select {
+        select, input[type="number"], input[type="text"] {
             background: #1e293b; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 8px; outline: none; cursor: pointer;
         }
+        
+        .control-group { display: flex; align-items: center; gap: 8px; background: #1e293b; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); }
+        .label { font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; }
+        .checkbox-wrapper { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 600; color: #cbd5e1; }
+        input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; }
 
         #palette {
             pointer-events: auto;
@@ -159,6 +164,14 @@
         }
         .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
 
+        /* Start Screen for Exported Games */
+        #start-screen {
+            display: none; position: absolute; inset: 0; background: #0f172a;
+            align-items: center; justify-content: center; flex-direction: column; z-index: 300; pointer-events: auto;
+        }
+        #start-screen h1 { font-size: 60px; margin: 0 0 20px 0; color: var(--accent); text-shadow: 0 0 30px var(--accent); }
+        #start-screen p { color: #94a3b8; margin-bottom: 40px; }
+
         body.exported #toolbar, 
         body.exported #palette, 
         body.exported #controls-info { display: none !important; }
@@ -172,15 +185,31 @@
         <div id="toolbar">
             <div class="logo">VoxelVerse</div>
             <div style="width: 1px; height: 20px; background: #334155; margin: 0 5px;"></div>
+            
             <select id="level-select" onchange="switchLevel(this.value)"></select>
             <button class="btn" onclick="openModal('level')" title="New Level">➕</button>
             <button class="btn danger" onclick="deleteLevel()" title="Delete Level">🗑️</button>
-            <button class="btn danger" onclick="clearCurrentLevel()" title="Clear All Blocks">🧹</button>
+            
+            <div style="width: 1px; height: 20px; background: #334155; margin: 0 5px;"></div>
+            
+            <div class="control-group">
+                <span class="label">Lyr</span>
+                <input type="number" id="layer-input" value="0" style="width: 40px;" onchange="updateBuildLayer(this.value)">
+                <label class="checkbox-wrapper">
+                    <input type="checkbox" id="force-layer" onchange="toggleForceLayer(this.checked)"> Force
+                </label>
+            </div>
+
+            <div class="control-group" style="margin-left: 10px;">
+                <span class="label">Size</span>
+                <input type="number" id="scale-input" value="1" step="0.1" min="0.1" max="5" style="width: 40px;" onchange="updateBuildScale(this.value)">
+            </div>
+
             <div style="flex-grow: 1;"></div>
-            <button class="btn dev" onclick="openModal('dev')" title="Enter Code">⚙️</button>
+            <button class="btn" onclick="openImport()" title="Import HTML">📥 Import</button>
+            <button class="btn" onclick="exportGame()" title="Export HTML">📦 Export</button>
             <button class="btn" onclick="saveProject()">💾 Save</button>
-            <button class="btn" onclick="loadProject()">📂 Load</button>
-            <button class="btn" onclick="exportGame()">📦 Export HTML</button>
+            <button class="btn dev" onclick="openModal('dev')" title="Enter Code">⚙️</button>
             <div style="width: 1px; height: 20px; background: #334155; margin: 0 5px;"></div>
             <button class="btn primary" id="btn-play" onclick="togglePlayMode()">▶ PLAY</button>
         </div>
@@ -190,7 +219,7 @@
         <div id="controls-info">
             <div class="row"><span>Move Cam</span> <span><span class="key">WASD</span></span></div>
             <div class="row"><span>Look</span> <span><span class="key">R-Click</span> + Drag</span></div>
-            <div class="row"><span>Fly Up</span> <span><span class="key">Space</span></span></div>
+            <div class="row"><span>Up/Down</span> <span><span class="key">Space</span>/<span class="key">Ctrl</span></span></div>
             <div class="row"><span>Place/Delete</span> <span><span class="key">L-Click</span></span></div>
             <div class="row"><span>Fast Fly</span> <span><span class="key">Shift</span></span></div>
         </div>
@@ -209,6 +238,9 @@
         <div id="toast">Saved!</div>
     </div>
 
+    <!-- Hidden File Input for Import -->
+    <input type="file" id="import-file" style="display:none" accept=".html" onchange="handleFileSelect(this)">
+
     <!-- Custom Modal -->
     <div id="modal-overlay">
         <div class="modal">
@@ -219,6 +251,13 @@
                 <button class="btn primary" onclick="submitModal()">Confirm</button>
             </div>
         </div>
+    </div>
+
+    <!-- Start Screen (Exported Only) -->
+    <div id="start-screen">
+        <h1>VOXELVERSE</h1>
+        <p>Made by oiPoipoi Games</p>
+        <button class="btn primary" onclick="startGame()" style="font-size: 24px; padding: 20px 40px;">CLICK TO START</button>
     </div>
 
     <div id="game-over">
@@ -233,7 +272,7 @@
 
 <script>
 /**
- * VOXELVERSE ENGINE v4.0
+ * VOXELVERSE ENGINE v4.4
  * Made by oiPoipoi Games
  */
 
@@ -263,6 +302,9 @@ let godMode = false;
 let gameEnded = false;
 let bullets = []; 
 let pendingPlaceCoords = null; // For modal flow
+let buildLayerY = 0; // For mid-air placement
+let forceLayer = false;
+let buildScale = 1;
 
 // Physics State
 let player = {
@@ -379,15 +421,52 @@ function getTexture(type, color, text) {
 
     if (type === 'sign') {
         ctx.fillStyle = "#e2e8f0";
-        ctx.fillRect(10,10,108,108); 
-        ctx.fillStyle = "#334155";
-        ctx.font = "bold 20px Arial";
+        ctx.fillRect(5,5,118,118); 
+        ctx.fillStyle = "#1e293b";
+        
+        const content = text || "Sign";
+        // Auto Scale Text
+        let fontSize = 20;
+        ctx.font = `bold ${fontSize}px Arial`;
+        let textWidth = ctx.measureText(content).width;
+        
+        // Simple fitting loop
+        while(textWidth > 100 && fontSize > 10) {
+            fontSize--;
+            ctx.font = `bold ${fontSize}px Arial`;
+            textWidth = ctx.measureText(content).width;
+        }
+
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(text || "Sign", 64, 64);
+        
+        // Wrapping
+        const words = content.split(' ');
+        let lines = [];
+        let currentLine = words[0];
+
+        for (let i = 1; i < words.length; i++) {
+            let width = ctx.measureText(currentLine + " " + words[i]).width;
+            if (width < 110) {
+                currentLine += " " + words[i];
+            } else {
+                lines.push(currentLine);
+                currentLine = words[i];
+            }
+        }
+        lines.push(currentLine);
+
+        const lineHeight = fontSize * 1.2;
+        const totalHeight = lines.length * lineHeight;
+        let startY = 64 - (totalHeight / 2) + (lineHeight / 2);
+
+        lines.forEach((line, i) => {
+            ctx.fillText(line, 64, startY + (i * lineHeight));
+        });
+        
         ctx.strokeStyle = "#475569";
         ctx.lineWidth = 5;
-        ctx.strokeRect(10,10,108,108);
+        ctx.strokeRect(5,5,118,118);
     }
     else if (type === 'brick' || type === 'wood') {
         ctx.strokeStyle = "rgba(0,0,0,0.2)";
@@ -508,26 +587,42 @@ function initPalette() {
     });
 }
 
+function updateBuildLayer(val) {
+    buildLayerY = parseInt(val) || 0;
+    gridHelper.position.y = buildLayerY; // Visual Feedback
+}
+
+function toggleForceLayer(checked) {
+    forceLayer = checked;
+}
+
+function updateBuildScale(val) {
+    buildScale = parseFloat(val) || 1;
+}
+
 // --- OBJECT MANAGEMENT ---
 
-function createMesh(type, x, y, z, text) {
+function createMesh(type, x, y, z, text, scaleVal = 1) {
     if (!TOOLS[type] && !DEV_TOOLS[type]) return null;
     
     const data = { ...TOOLS[type], ...DEV_TOOLS[type] }; 
     let geo, mat;
 
+    // Use buildScale for box/cylinder size, unless specific shape overrides
+    const s = scaleVal;
+
     if (data.shape === 'coin') {
-        geo = new THREE.CylinderGeometry(0.3, 0.3, 0.05, 16);
+        geo = new THREE.CylinderGeometry(0.3 * s, 0.3 * s, 0.05 * s, 16);
         geo.rotateX(Math.PI/2);
     } else if (data.shape === 'cylinder') {
-        geo = new THREE.CylinderGeometry(0.4, 0.4, 0.2, 16);
-        geo.translate(0, 0.1, 0); // Flat pad
+        geo = new THREE.CylinderGeometry(0.4 * s, 0.4 * s, 0.2 * s, 16);
+        geo.translate(0, 0.1 * s, 0); 
     } else if (data.shape === 'sign') {
-        geo = new THREE.BoxGeometry(0.8, 0.8, 0.1);
-        geo.translate(0, 0.5, 0);
+        geo = new THREE.BoxGeometry(0.8 * s, 0.8 * s, 0.1 * s);
+        geo.translate(0, 0.5 * s, 0);
     } else {
-        geo = new THREE.BoxGeometry(1, 1, 1);
-        geo.translate(0, 0.5, 0);
+        geo = new THREE.BoxGeometry(1 * s, 1 * s, 1 * s);
+        geo.translate(0, 0.5 * s, 0);
     }
 
     const matProps = { color: data.color };
@@ -551,7 +646,8 @@ function createMesh(type, x, y, z, text) {
         isTurret: data.isTurret,
         isTP: data.isTP,
         lastFire: 0,
-        text: text
+        text: text,
+        scale: s
     };
     
     mesh.scale.set(0,0,0);
@@ -575,7 +671,8 @@ function addObject(x, y, z, type, text = null) {
         if(oldSpawn) removeObject(oldSpawn);
     }
 
-    const mesh = createMesh(type, x, y, z, text);
+    // Apply current buildScale
+    const mesh = createMesh(type, x, y, z, text, buildScale);
     if(mesh) {
         scene.add(mesh);
         objects.push(mesh);
@@ -611,6 +708,7 @@ function getLevelList() {
 }
 
 function saveCurrentLevelState() {
+    // Safety check: if level was deleted, currentLevelId might point to nothing
     const lvl = project.levels.find(l => l.id === project.currentLevelId);
     if(!lvl) return; 
     
@@ -619,7 +717,8 @@ function saveCurrentLevelState() {
         x: o.position.x,
         y: o.position.y,
         z: o.position.z,
-        text: o.userData.text 
+        text: o.userData.text,
+        scale: o.userData.scale // Save scale
     }));
 }
 
@@ -637,7 +736,15 @@ function loadLevel(id, skipSave = false) {
     project.currentLevelId = id;
     
     lvl.objects.forEach(data => {
-        addObject(data.x, data.y, data.z, data.type, data.text);
+        // Pass saved scale or default 1
+        const s = data.scale || 1;
+        // addObject uses global buildScale, we need to bypass or set it momentarily
+        // Better to call createMesh directly and add to scene
+        const mesh = createMesh(data.type, data.x, data.y, data.z, data.text, s);
+        if(mesh) {
+            scene.add(mesh);
+            objects.push(mesh);
+        }
     });
     
     getLevelList();
@@ -669,7 +776,7 @@ function switchLevel(id) {
     loadLevel(id);
 }
 
-// --- EXPORT & SAVE ---
+// --- EXPORT & SAVE & IMPORT ---
 
 function saveProject() {
     saveCurrentLevelState();
@@ -695,6 +802,11 @@ function loadProject() {
     showToast("Project Loaded!");
 }
 
+function startGame() {
+    document.getElementById('start-screen').style.display = 'none';
+    togglePlayMode();
+}
+
 function exportGame() {
     saveCurrentLevelState();
     
@@ -705,8 +817,9 @@ function exportGame() {
         // Don't return, just warn.
     }
 
+    // Use UTF-8 compatible Base64 encoding
     const json = JSON.stringify(project);
-    const b64 = btoa(unescape(encodeURIComponent(json)));
+    const b64 = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, function(match, p1) { return String.fromCharCode('0x' + p1); }));
     
     const clone = document.documentElement.cloneNode(true);
     clone.querySelector('body').classList.add('exported');
@@ -721,7 +834,7 @@ function exportGame() {
     script.textContent = `
         window.IS_EXPORTED_GAME = true;
         const raw = "${b64}";
-        window.EXPORTED_PROJECT = JSON.parse(decodeURIComponent(escape(atob(raw))));
+        window.EXPORTED_PROJECT = JSON.parse(decodeURIComponent(Array.prototype.map.call(atob(raw), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
     `;
     clone.querySelector('head').insertBefore(script, clone.querySelector('head').firstChild);
 
@@ -734,6 +847,45 @@ function exportGame() {
     a.download = 'index.html'; 
     a.click();
     showToast("Exported index.html!");
+}
+
+function openImport() {
+    document.getElementById('import-file').click();
+}
+
+function handleFileSelect(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const content = e.target.result;
+        // Regex to find the base64 string variable assignment
+        const match = content.match(/const raw = "([^"]+)";/);
+        
+        if (match && match[1]) {
+            try {
+                // Decode UTF-8 compatible Base64
+                const raw = match[1];
+                const json = decodeURIComponent(Array.prototype.map.call(atob(raw), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                const importedProject = JSON.parse(json);
+                
+                project = importedProject;
+                // Reset to first level or saved state
+                const startId = project.currentLevelId || project.levels[0].id;
+                loadLevel(startId); 
+                showToast("Game Imported!");
+            } catch (err) {
+                console.error(err);
+                showToast("Error parsing file.");
+            }
+        } else {
+            showToast("Invalid VoxelVerse file.");
+        }
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be selected again
+    input.value = '';
 }
 
 // --- DEMO LEVELS ---
@@ -795,7 +947,7 @@ function updateEditor(dt) {
     if (input.keys['KeyD']) camera.position.add(right.multiplyScalar(speed * dt));
     
     if (input.keys['Space']) camera.position.y += speed * dt;
-    if (input.keys['KeyC']) camera.position.y -= speed * dt;
+    if (input.keys['ControlLeft'] || input.keys['ControlRight']) camera.position.y -= speed * dt;
 
     const ray = new THREE.Raycaster();
     ray.setFromCamera(input.mouse, camera);
@@ -805,7 +957,9 @@ function updateEditor(dt) {
         if (intersects.length > 0) {
             const hitObj = intersects[0].object;
             ghostBox.position.copy(hitObj.position);
-            ghostBox.scale.set(1.05, 1.05, 1.05); 
+            // Eraser respects object's own scale for highlighting
+            const s = hitObj.userData.scale || 1;
+            ghostBox.scale.set(s*1.05, s*1.05, s*1.05); 
             ghostBox.material.color.setHex(0xff0000);
             ghostBox.visible = true;
             
@@ -818,31 +972,48 @@ function updateEditor(dt) {
         }
     } else {
         let targetPos = new THREE.Vector3();
-        if (intersects.length > 0) {
+        let valid = false;
+
+        // If Force Layer is ON or no object hit, raycast against plane
+        if (forceLayer) {
+             const plane = new THREE.Plane(new THREE.Vector3(0,1,0), -buildLayerY);
+             const intersection = ray.ray.intersectPlane(plane, targetPos);
+             valid = !!intersection;
+        } 
+        else if (intersects.length > 0) {
             const hit = intersects[0];
             targetPos.copy(hit.point).add(hit.face.normal.multiplyScalar(0.5));
+            valid = true;
         } else {
-            const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
-            ray.ray.intersectPlane(plane, targetPos);
+            // Default plane check
+            const plane = new THREE.Plane(new THREE.Vector3(0,1,0), -buildLayerY);
+            const intersection = ray.ray.intersectPlane(plane, targetPos);
+            valid = !!intersection;
         }
 
-        const x = Math.round(targetPos.x);
-        const y = Math.max(0, Math.floor(targetPos.y)); 
-        const z = Math.round(targetPos.z);
-        
-        ghostBox.position.set(x, y, z);
-        ghostBox.scale.set(1, 1, 1);
-        ghostBox.material.color.setHex(0xffffff);
-        ghostBox.visible = true;
+        if (valid) {
+            const x = Math.round(targetPos.x);
+            // If normal placement, snap Y. If force layer, stick to buildLayerY.
+            // Using Math.floor/round on targetPos handles both generally if plane is at Integer Y.
+            const y = Math.floor(targetPos.y + 0.01); // Epsilon for float issues
+            const z = Math.round(targetPos.z);
+            
+            ghostBox.position.set(x, y, z);
+            ghostBox.scale.set(buildScale, buildScale, buildScale);
+            ghostBox.material.color.setHex(0xffffff);
+            ghostBox.visible = true;
 
-        if (input.mouseDown) {
-            if (selectedTool === 'sign') {
-                pendingPlaceCoords = {x, y, z};
-                openModal('sign');
-            } else {
-                addObject(x, y, z, selectedTool);
+            if (input.mouseDown) {
+                if (selectedTool === 'sign') {
+                    pendingPlaceCoords = {x, y, z};
+                    openModal('sign');
+                } else {
+                    addObject(x, y, z, selectedTool);
+                }
+                input.mouseDown = false; 
             }
-            input.mouseDown = false; 
+        } else {
+            ghostBox.visible = false;
         }
     }
 }
@@ -862,7 +1033,7 @@ function updateGame(dt) {
         showToast(godMode ? "God Mode ON" : "God Mode OFF");
     }
 
-    const rayDown = new THREE.Raycaster(player.pos, new THREE.Vector3(0,-1,0), 0, 1.5);
+    const rayDown = new THREE.Raycaster(player.pos.clone().add(new THREE.Vector3(0, 0.1, 0)), new THREE.Vector3(0,-1,0), 0, 1.2);
     const floorHits = rayDown.intersectObjects(objects);
     
     if (floorHits.length > 0 && player.onGround) {
@@ -870,6 +1041,10 @@ function updateGame(dt) {
         player.friction = floorObj.userData.friction;
         player.speedMod = floorObj.userData.speed;
         
+        if (floorObj.userData.gameType === 'hazard' && !godMode) {
+            restartLevel();
+        }
+
         if (floorObj.userData.isTP) {
             const targets = objects.filter(o => o.userData.isTP && o !== floorObj);
             if (targets.length > 0) {
@@ -1008,36 +1183,41 @@ function checkCol(pos) {
     const minY = pos.y, maxY = pos.y + player.height;
     const minZ = pos.z - r, maxZ = pos.z + r;
 
+    // Use Box3 for accurate AABB collision with scaled blocks
+    const playerBox = new THREE.Box3(
+        new THREE.Vector3(minX, minY, minZ),
+        new THREE.Vector3(maxX, maxY, maxZ)
+    );
+
     for(let o of objects) {
         if (!o.visible || o.userData.gameType === 'spawn') continue;
         
-        const ox = o.position.x, oy = o.position.y, oz = o.position.z;
-        
-        if (o.userData.gameType === 'collectible' || o.userData.gameType === 'goal') {
-             const dist = pos.distanceTo(o.position);
-             if (dist < 1.0) {
-                 if(o.userData.gameType === 'collectible') {
-                     o.visible = false;
-                     score++;
-                     document.getElementById('coin-count').innerText = score;
-                 } else if (o.userData.gameType === 'goal') {
-                     winLevel();
-                 }
-             }
-             continue; 
-        }
+        const s = o.userData.scale || 1;
+        const box = new THREE.Box3();
+        box.min.set(o.position.x - 0.5*s, o.position.y, o.position.z - 0.5*s);
+        box.max.set(o.position.x + 0.5*s, o.position.y + s, o.position.z + 0.5*s);
 
-        if (o.userData.gameType === 'hazard') {
-             if (maxX > ox-0.5 && minX < ox+0.5 && maxY > oy && minY < oy+0.8 && maxZ > oz-0.5 && minZ < oz+0.5) {
-                 if (!godMode) restartLevel();
-             }
-        }
-
-        if (maxX > ox-0.5 && minX < ox+0.5 && 
-            maxY > oy     && minY < oy+1   && 
-            maxZ > oz-0.5 && minZ < oz+0.5) {
+        if (box.intersectsBox(playerBox)) {
+            // Triggers
+            if (o.userData.gameType === 'collectible') {
+                o.visible = false;
+                score++;
+                document.getElementById('coin-count').innerText = score;
+                return null;
+            }
+            if (o.userData.gameType === 'goal') {
+                winLevel();
+                return null;
+            }
             
-            return o.userData; 
+            // Hazard
+            if (o.userData.gameType === 'hazard') {
+                if (!godMode) restartLevel();
+                return null;
+            }
+
+            // Solid
+            return o.userData;
         }
     }
     return null;
@@ -1263,7 +1443,7 @@ function init() {
     if (window.IS_EXPORTED_GAME) {
         isExported = true;
         
-        // CLEANUP: Remove any existing canvas before loading new one (Fixes duplicate canvas on export load)
+        // CLEANUP
         const container = document.getElementById('canvas-container');
         while (container.firstChild) {
             container.removeChild(container.firstChild);
@@ -1273,16 +1453,17 @@ function init() {
         project = window.EXPORTED_PROJECT;
         document.body.classList.add('exported');
         
+        // Show start screen
+        document.getElementById('start-screen').style.display = 'flex';
         // Load the level that was active during export, or default to first
         const startId = project.currentLevelId || project.levels[0].id;
         loadLevel(startId, true); 
-        togglePlayMode(); 
+        // Note: Do NOT call togglePlayMode here. Wait for user click.
     } else {
         // Load demo levels if empty
         if(!localStorage.getItem('voxelverse_project')) {
             createDemoLevels();
         } else {
-            // Load saved state
             loadProject();
         }
     }
