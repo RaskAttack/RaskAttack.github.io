@@ -22,7 +22,6 @@
             --warning: #f59e0b;
             --dev: #eab308;
             --ai: #a855f7;
-            --tool-active: #38bdf8;
         }
 
         body.light-mode {
@@ -50,20 +49,9 @@
             border-bottom: 1px solid var(--border-color);
             height: 54px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            
-            /* Responsive Scroll */
             overflow-x: auto;
-            overflow-y: hidden;
-            white-space: nowrap;
             scrollbar-width: thin;
-            scrollbar-color: var(--border-color) transparent;
         }
-
-        /* Toolbar Scrollbar Styling */
-        #toolbar::-webkit-scrollbar { height: 4px; }
-        #toolbar::-webkit-scrollbar-track { background: transparent; }
-        #toolbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
-        #toolbar::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
         .logo { 
             font-weight: 900; font-size: 22px; 
@@ -246,7 +234,6 @@
         
         #loading-ai { display: none; color: var(--ai); font-weight: bold; margin-top: 10px; text-align: center; }
         
-        /* Responsive */
         @media (max-width: 1100px) { .btn-text { display: none; } .btn { padding: 8px; } }
     </style>
 </head>
@@ -472,9 +459,36 @@
 
 <script>
 /**
- * VOXELVERSE ENGINE v7.2
+ * VOXELVERSE ENGINE v7.3
  * Made by oiPoipoi Games
  */
+
+// --- TWEEN ENGINE (Moved Up to Fix Crash) ---
+const easingElastic = t => {
+    const c4 = (2 * Math.PI) / 3;
+    return t === 0 ? 0 : t === 1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4);
+};
+
+const TWEEN_REGISTRY = [];
+class TWEEN {
+    constructor(target) { this.target = target; this.toVals = {}; this.duration = 1000; this.startTime = 0; this.started = false; this.startVals = {}; this.easingFn = t => t; }
+    to(vals, dur) { this.toVals = vals; this.duration = dur; return this; }
+    easing(fn) { this.easingFn = fn; return this; }
+    start() { 
+        this.startTime = performance.now(); 
+        this.started = true;
+        for(let k in this.toVals) this.startVals[k] = this.target[k];
+        TWEEN_REGISTRY.push(this);
+    }
+    update(t) {
+        const progress = Math.min(1, (t - this.startTime) / this.duration);
+        const eased = this.easingFn(progress);
+        for(let k in this.toVals) {
+            this.target[k] = this.startVals[k] + (this.toVals[k] - this.startVals[k]) * eased;
+        }
+        return progress >= 1;
+    }
+}
 
 // --- CONFIG & LIMITS ---
 const CONFIG = {
@@ -535,33 +549,6 @@ let player = {
 };
 
 const input = { keys: {}, mouse: new THREE.Vector2(), mouseDown: false, rightDown: false };
-
-// --- TWEEN ENGINE (Moved Up) ---
-const easingElastic = t => {
-    const c4 = (2 * Math.PI) / 3;
-    return t === 0 ? 0 : t === 1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4);
-};
-
-const TWEEN_REGISTRY = [];
-class TWEEN {
-    constructor(target) { this.target = target; this.toVals = {}; this.duration = 1000; this.startTime = 0; this.started = false; this.startVals = {}; this.easingFn = t => t; }
-    to(vals, dur) { this.toVals = vals; this.duration = dur; return this; }
-    easing(fn) { this.easingFn = fn; return this; }
-    start() { 
-        this.startTime = performance.now(); 
-        this.started = true;
-        for(let k in this.toVals) this.startVals[k] = this.target[k];
-        TWEEN_REGISTRY.push(this);
-    }
-    update(t) {
-        const progress = Math.min(1, (t - this.startTime) / this.duration);
-        const eased = this.easingFn(progress);
-        for(let k in this.toVals) {
-            this.target[k] = this.startVals[k] + (this.toVals[k] - this.startVals[k]) * eased;
-        }
-        return progress >= 1;
-    }
-}
 
 // --- THREE.JS INIT ---
 const scene = new THREE.Scene();
@@ -706,8 +693,6 @@ function selectToolMode(toolName) {
     currentTool = toolName;
     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tool-' + toolName).classList.add('active');
-    
-    // Reset any pending states
     fillStart = null;
 }
 
@@ -992,116 +977,105 @@ function getTexture(type, color, text, customPixels) {
     ctx.fillStyle = color;
     ctx.fillRect(0,0,128,128);
 
-    if (customPixels) {
-        const scale = 128 / 16;
-        for(let i=0; i<256; i++) {
-            const x = (i % 16) * scale;
-            const y = Math.floor(i / 16) * scale;
-            ctx.fillStyle = customPixels[i];
-            ctx.fillRect(x, y, scale, scale);
-        }
-    } else {
-        addNoise(ctx, 0.05);
-
-        if (type === 'sign') {
-            ctx.fillStyle = "#e2e8f0";
-            ctx.fillRect(5,5,118,118); 
-            ctx.fillStyle = "#1e293b";
-            const content = text || "Sign";
-            let fontSize = 20;
+    if (type === 'sign') {
+        ctx.fillStyle = "#e2e8f0";
+        ctx.fillRect(5,5,118,118); 
+        ctx.fillStyle = "#1e293b";
+        
+        const content = text || "Sign";
+        let fontSize = 20;
+        ctx.font = `bold ${fontSize}px Arial`;
+        let textWidth = ctx.measureText(content).width;
+        while(textWidth > 100 && fontSize > 10) {
+            fontSize--;
             ctx.font = `bold ${fontSize}px Arial`;
-            let textWidth = ctx.measureText(content).width;
-            while(textWidth > 100 && fontSize > 10) {
-                fontSize--;
-                ctx.font = `bold ${fontSize}px Arial`;
-                textWidth = ctx.measureText(content).width;
-            }
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText(content, 64, 64);
-            ctx.strokeStyle = "#475569"; ctx.lineWidth = 5; ctx.strokeRect(5,5,118,118);
+            textWidth = ctx.measureText(content).width;
         }
-        else if (type === 'brick' || type === 'wood' || type === 'stone' || type === 'sand') {
-            ctx.strokeStyle = "rgba(0,0,0,0.2)";
-            ctx.lineWidth = 4;
-            ctx.strokeRect(0,0,128,128);
-            ctx.beginPath(); ctx.moveTo(0,64); ctx.lineTo(128,64); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(64,0); ctx.lineTo(64,64); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(64,64); ctx.lineTo(64,128); ctx.stroke(); 
-            if (type === 'stone') addNoise(ctx, 0.2); 
-            if (type === 'sand') addNoise(ctx, 0.3); 
-        } 
-        else if (type === 'log') {
-            ctx.strokeStyle = "#5d4037"; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.arc(64,64,50,0,Math.PI*2); ctx.stroke();
-            ctx.beginPath(); ctx.arc(64,64,30,0,Math.PI*2); ctx.stroke();
-            ctx.beginPath(); ctx.arc(64,64,10,0,Math.PI*2); ctx.stroke();
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(content, 64, 64);
+        ctx.strokeStyle = "#475569"; ctx.lineWidth = 5; ctx.strokeRect(5,5,118,118);
+    }
+    else if (type === 'brick' || type === 'wood' || type === 'stone' || type === 'sand') {
+        ctx.strokeStyle = "rgba(0,0,0,0.2)";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(0,0,128,128);
+        ctx.beginPath(); ctx.moveTo(0,64); ctx.lineTo(128,64); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(64,0); ctx.lineTo(64,64); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(64,64); ctx.lineTo(64,128); ctx.stroke(); 
+        if (type === 'stone') addNoise(ctx, 0.2); 
+        if (type === 'sand') addNoise(ctx, 0.3); 
+    } 
+    else if (type === 'log') {
+        ctx.strokeStyle = "#5d4037"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(64,64,50,0,Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(64,64,30,0,Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(64,64,10,0,Math.PI*2); ctx.stroke();
+    }
+    else if (type === 'leaves') {
+        ctx.fillStyle = "rgba(0,0,0,0.2)";
+        for(let i=0; i<40; i++) ctx.fillRect(Math.random()*110, Math.random()*110, 15, 15);
+    }
+    else if (type === 'grass') {
+        ctx.fillStyle = "rgba(255,255,255,0.1)";
+        for(let i=0; i<100; i++) ctx.fillRect(Math.random()*128,Math.random()*128, 4, 6);
+    }
+    else if (type === 'hazard') {
+        ctx.fillStyle = "#fbbf24"; 
+        for(let i=-128; i<128; i+=32) {
+            ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i+16,0); ctx.lineTo(i+144,128); ctx.lineTo(i+128,128); ctx.fill();
         }
-        else if (type === 'leaves') {
-            ctx.fillStyle = "rgba(0,0,0,0.2)";
-            for(let i=0; i<40; i++) ctx.fillRect(Math.random()*110, Math.random()*110, 15, 15);
+    }
+    else if (type === 'bounce') {
+        ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.lineWidth=8;
+        ctx.beginPath(); ctx.arc(64,64,32,0,Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(64,64,16,0,Math.PI*2); ctx.stroke();
+    }
+    else if (type === 'speed') {
+        ctx.fillStyle = "rgba(255,255,255,0.3)";
+        ctx.beginPath(); ctx.moveTo(20,128); ctx.lineTo(64,0); ctx.lineTo(108,128); ctx.fill();
+    }
+    else if (type === 'turret') {
+        ctx.fillStyle = "#1e293b"; ctx.fillRect(16,16,96,96); 
+        ctx.fillStyle = "#ef4444"; ctx.beginPath(); ctx.arc(64,64,24,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle = "#475569"; ctx.lineWidth=6; ctx.strokeRect(16,16,96,96);
+    }
+    else if (type === 'teleport') {
+        ctx.fillStyle = "#1e1b4b"; ctx.fillRect(0,0,128,128);
+        ctx.strokeStyle = "#c084fc"; ctx.lineWidth=4;
+        for(let i=1; i<8; i++) {
+            ctx.beginPath(); ctx.arc(64,64, i*8, i*0.5, Math.PI+i*0.5); ctx.stroke();
         }
-        else if (type === 'grass') {
-            ctx.fillStyle = "rgba(255,255,255,0.1)";
-            for(let i=0; i<100; i++) ctx.fillRect(Math.random()*128,Math.random()*128, 4, 6);
+    }
+    else if (type === 'ice') {
+        ctx.fillStyle = "rgba(255,255,255,0.3)";
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(60,128); ctx.lineTo(128,0); ctx.fill();
+    }
+    else if (type === 'mud') {
+        addNoise(ctx, 0.4);
+    }
+    else if (type === 'goal') {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0,0,64,64); ctx.fillRect(64,64,64,64);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(64,0,64,64); ctx.fillRect(0,64,64,64);
+    }
+    else if (type === 'spawn') {
+        ctx.fillStyle = "#334155"; ctx.fillRect(0,0,128,128);
+        ctx.strokeStyle = "#38bdf8"; ctx.lineWidth=6;
+        ctx.beginPath(); ctx.arc(64,64,40,0,Math.PI*2); ctx.stroke();
+        ctx.fillStyle = "#38bdf8"; ctx.font="60px Arial"; ctx.textAlign="center"; ctx.fillText("H", 64, 84);
+    }
+    else if (type === 'ladder') {
+        ctx.strokeStyle = "#854d0e"; ctx.lineWidth = 8;
+        ctx.beginPath(); ctx.moveTo(32,0); ctx.lineTo(32,128); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(96,0); ctx.lineTo(96,128); ctx.stroke();
+        ctx.lineWidth = 6;
+        for(let i=16; i<128; i+=32) {
+            ctx.beginPath(); ctx.moveTo(32,i); ctx.lineTo(96,i); ctx.stroke();
         }
-        else if (type === 'hazard') {
-            ctx.fillStyle = "#fbbf24"; 
-            for(let i=-128; i<128; i+=32) {
-                ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i+16,0); ctx.lineTo(i+144,128); ctx.lineTo(i+128,128); ctx.fill();
-            }
-        }
-        else if (type === 'bounce') {
-            ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.lineWidth=8;
-            ctx.beginPath(); ctx.arc(64,64,32,0,Math.PI*2); ctx.stroke();
-            ctx.beginPath(); ctx.arc(64,64,16,0,Math.PI*2); ctx.stroke();
-        }
-        else if (type === 'speed') {
-            ctx.fillStyle = "rgba(255,255,255,0.3)";
-            ctx.beginPath(); ctx.moveTo(20,128); ctx.lineTo(64,0); ctx.lineTo(108,128); ctx.fill();
-        }
-        else if (type === 'turret') {
-            ctx.fillStyle = "#1e293b"; ctx.fillRect(16,16,96,96); 
-            ctx.fillStyle = "#ef4444"; ctx.beginPath(); ctx.arc(64,64,24,0,Math.PI*2); ctx.fill();
-            ctx.strokeStyle = "#475569"; ctx.lineWidth=6; ctx.strokeRect(16,16,96,96);
-        }
-        else if (type === 'teleport') {
-            ctx.fillStyle = "#1e1b4b"; ctx.fillRect(0,0,128,128);
-            ctx.strokeStyle = "#c084fc"; ctx.lineWidth=4;
-            for(let i=1; i<8; i++) {
-                ctx.beginPath(); ctx.arc(64,64, i*8, i*0.5, Math.PI+i*0.5); ctx.stroke();
-            }
-        }
-        else if (type === 'ice') {
-            ctx.fillStyle = "rgba(255,255,255,0.3)";
-            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(60,128); ctx.lineTo(128,0); ctx.fill();
-        }
-        else if (type === 'mud') {
-            addNoise(ctx, 0.4);
-        }
-        else if (type === 'goal') {
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(0,0,64,64); ctx.fillRect(64,64,64,64);
-            ctx.fillStyle = '#000';
-            ctx.fillRect(64,0,64,64); ctx.fillRect(0,64,64,64);
-        }
-        else if (type === 'spawn') {
-            ctx.fillStyle = "#334155"; ctx.fillRect(0,0,128,128);
-            ctx.strokeStyle = "#38bdf8"; ctx.lineWidth=6;
-            ctx.beginPath(); ctx.arc(64,64,40,0,Math.PI*2); ctx.stroke();
-            ctx.fillStyle = "#38bdf8"; ctx.font="60px Arial"; ctx.textAlign="center"; ctx.fillText("H", 64, 84);
-        }
-        else if (type === 'ladder') {
-            ctx.strokeStyle = "#854d0e"; ctx.lineWidth = 8;
-            ctx.beginPath(); ctx.moveTo(32,0); ctx.lineTo(32,128); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(96,0); ctx.lineTo(96,128); ctx.stroke();
-            ctx.lineWidth = 6;
-            for(let i=16; i<128; i+=32) {
-                ctx.beginPath(); ctx.moveTo(32,i); ctx.lineTo(96,i); ctx.stroke();
-            }
-        }
-        else if (type === 'light') {
-            ctx.fillStyle = "#fef08a"; ctx.fillRect(32,32,64,64);
-        }
+    }
+    else if (type === 'light') {
+        ctx.fillStyle = "#fef08a"; ctx.fillRect(32,32,64,64);
     }
 
     const tex = new THREE.CanvasTexture(canvas);
@@ -1145,26 +1119,19 @@ const DEV_TOOLS = {
 
 function initPalette() {
     const p = document.getElementById('palette');
-    if (!p) return; // Guard for export mode
+    if (!p) return; 
     p.innerHTML = '';
     
-    // Add custom blocks to available tools
     const allTools = { ...TOOLS, ...(devMode ? DEV_TOOLS : {}) };
-    // Merge custom blocks
     if (project.customBlocks) {
-        project.customBlocks.forEach(cb => {
-            allTools[cb.id] = cb;
-        });
+        project.customBlocks.forEach(cb => { allTools[cb.id] = cb; });
     }
 
     Object.entries(allTools).forEach(([key, tool]) => {
         const el = document.createElement('div');
         el.className = `tool-item ${currentBlockType === key ? 'selected' : ''} ${devMode && DEV_TOOLS[key] ? 'dev-item' : ''} ${tool.isCustom ? 'custom-item' : ''}`;
         el.onclick = () => {
-            currentBlockType = key; // Select MATERIAL
-            // If current tool is eraser or pick, switch back to brush for convenience?
-            // Actually, keep tool but update material
-            // User might want to Fill with this new material
+            currentBlockType = key;
             document.querySelectorAll('.tool-item').forEach(e => e.classList.remove('selected'));
             el.classList.add('selected');
         };
@@ -1182,14 +1149,9 @@ function createCustomBlockFromUI() {
     
     const id = 'custom_' + Date.now();
     const newBlock = {
-        id: id,
-        name: name,
-        color: color,
+        id: id, name: name, color: color,
         type: type === 'hazard' || type === 'bounce' || type === 'speed' ? 'solid' : 'solid', 
-        tex: 'custom', 
-        icon: '📦',
-        isCustom: true,
-        customPixels: [...painterPixels], 
+        tex: 'custom', icon: '📦', isCustom: true, customPixels: [...painterPixels], 
         gameType: type === 'hazard' ? 'hazard' : 'solid',
         bounce: type === 'bounce' ? force : 0,
         friction: type === 'ice' ? 0.05 : (type === 'mud' ? 50 : 10), 
@@ -1218,10 +1180,7 @@ function updateBuildLayer(val) {
     gridHelper.position.y = buildLayerY; 
 }
 
-function toggleForceLayer(checked) {
-    forceLayer = checked;
-}
-
+function toggleForceLayer(checked) { forceLayer = checked; }
 function updateBuildScale() {
     buildScale.x = parseFloat(document.getElementById('scale-x').value) || 1;
     buildScale.y = parseFloat(document.getElementById('scale-y').value) || 1;
@@ -1232,17 +1191,11 @@ function updateBuildScale() {
 
 function createMesh(type, x, y, z, text, scaleVal = {x:1,y:1,z:1}) {
     let data = TOOLS[type] || DEV_TOOLS[type];
-    if (!data && project.customBlocks) {
-        data = project.customBlocks.find(b => b.id === type);
-    }
-    
+    if (!data && project.customBlocks) data = project.customBlocks.find(b => b.id === type);
     if (!data) return null;
     
     let geo, mat;
-
-    const sx = scaleVal.x || 1;
-    const sy = scaleVal.y || 1;
-    const sz = scaleVal.z || 1;
+    const sx = scaleVal.x || 1; const sy = scaleVal.y || 1; const sz = scaleVal.z || 1;
 
     if (data.shape === 'coin') {
         geo = new THREE.CylinderGeometry(0.3 * Math.min(sx,sz), 0.3 * Math.min(sx,sz), 0.05 * sy, 16);
@@ -1292,19 +1245,14 @@ function createMesh(type, x, y, z, text, scaleVal = {x:1,y:1,z:1}) {
 }
 
 function addObject(x, y, z, type, text = null, scaleOverride = null) {
-    if (type === 'eraser') return; 
+    if (currentTool === 'eraser' || currentTool === 'pick') return; 
 
-    // LIMIT CHECK
     if (!devMode && objects.length >= LIMITS.BLOCKS) {
-        showToast("Block Limit Reached! (2000)");
+        if(!isFillMode) showToast("Block Limit Reached! (2000)");
         return;
     }
 
-    const exist = objects.find(o => 
-        Math.abs(o.position.x - x) < 0.1 && 
-        Math.abs(o.position.y - y) < 0.1 && 
-        Math.abs(o.position.z - z) < 0.1
-    );
+    const exist = objects.find(o => Math.abs(o.position.x - x) < 0.1 && Math.abs(o.position.y - y) < 0.1 && Math.abs(o.position.z - z) < 0.1);
     if (exist) return;
 
     if (type === 'spawn') {
@@ -1349,17 +1297,12 @@ function getLevelList() {
 }
 
 function saveCurrentLevelState() {
-    // Safety check: if level was deleted, currentLevelId might point to nothing
     const lvl = project.levels.find(l => l.id === project.currentLevelId);
     if(!lvl) return; 
-    
     lvl.objects = objects.map(o => ({
         type: o.userData.type,
-        x: o.position.x,
-        y: o.position.y,
-        z: o.position.z,
-        text: o.userData.text,
-        scale: o.userData.scale // Save vector scale
+        x: o.position.x, y: o.position.y, z: o.position.z,
+        text: o.userData.text, scale: o.userData.scale 
     }));
 }
 
@@ -1377,11 +1320,9 @@ function loadLevel(id, skipSave = false) {
     project.currentLevelId = id;
     
     lvl.objects.forEach(data => {
-        // Pass saved scale or default 1
         let s = data.scale;
         if (typeof s === 'number') s = {x:s, y:s, z:s};
         if (!s) s = {x:1, y:1, z:1};
-
         const mesh = createMesh(data.type, data.x, data.y, data.z, data.text, s);
         if(mesh) {
             scene.add(mesh);
@@ -1410,7 +1351,7 @@ function deleteLevel() {
     
     const newId = project.levels[0].id;
     project.currentLevelId = newId; 
-    objects = []; // Important: Clear objects so we don't save old state to new ID
+    objects = []; 
     loadLevel(newId, true); 
 }
 
@@ -1455,7 +1396,6 @@ function performExport(title, btnText) {
     const currentLvl = project.levels.find(l => l.id === project.currentLevelId);
     if (!currentLvl.objects.some(o => o.type === 'spawn')) {
         alert(`Warning: Current level (${currentLvl.name}) has no 'Start' point.`);
-        // Don't return, just warn.
     }
 
     const json = JSON.stringify(project);
@@ -1479,7 +1419,6 @@ function performExport(title, btnText) {
         if(el) el.remove();
     });
 
-    // Embed data in comments for easy import
     const dataComment = document.createComment(`VOXELDATA[${b64}]`);
     clone.appendChild(dataComment);
 
@@ -1502,8 +1441,8 @@ function performExport(title, btnText) {
     showToast("Exported index.html!");
 }
 
-function exportGame() {
-    openExportModal();
+function openExportModal() {
+    openExportModal(); // Re-use modal logic
 }
 
 function openImport() {
@@ -1517,7 +1456,6 @@ function handleFileSelect(input) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const content = e.target.result;
-        // Search for the comment marker
         const startMarker = "VOXELDATA[";
         const startIndex = content.indexOf(startMarker);
         
@@ -1526,22 +1464,16 @@ function handleFileSelect(input) {
                 const start = startIndex + startMarker.length;
                 const end = content.indexOf("]", start);
                 const raw = content.substring(start, end);
-                
                 const json = decodeURIComponent(Array.prototype.map.call(atob(raw), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
                 const importedProject = JSON.parse(json);
-                
                 project = importedProject;
                 if(project.customBlocks) initPalette(); 
-                
                 const startId = project.currentLevelId || project.levels[0].id;
                 loadLevel(startId); 
                 showToast("Game Imported!");
-            } catch (err) {
-                console.error(err);
-                showToast("Error parsing file.");
-            }
+            } catch (err) { console.error(err); showToast("Error parsing file."); }
         } else {
-            // Fallback to legacy regex
+             // Fallback for older saves
             const match = content.match(/const\s+raw\s*=\s*"([^"]+)"/);
             if(match && match[1]) {
                  try {
@@ -1577,7 +1509,6 @@ function createDemoLevels() {
             {x:0,y:3,z:-10,type:'goal'}
         ]
     };
-    
     const parkour = {
         id: 'lvl2', name: 'Parkour',
         objects: [
@@ -1588,7 +1519,6 @@ function createDemoLevels() {
             {x:6,y:5,z:-12,type:'goal'}
         ]
     };
-
     project.levels = [tutorial, parkour];
     project.currentLevelId = 'lvl1';
     loadLevel('lvl1', true);
@@ -1609,13 +1539,11 @@ function updateEditor(dt) {
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
     
-    // INPUT FIX: Only move if not typing in input
     if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
         if (input.keys['KeyW']) camera.position.add(forward.multiplyScalar(speed * dt));
         if (input.keys['KeyS']) camera.position.add(forward.multiplyScalar(-speed * dt));
         if (input.keys['KeyA']) camera.position.add(right.multiplyScalar(-speed * dt));
         if (input.keys['KeyD']) camera.position.add(right.multiplyScalar(speed * dt));
-        
         if (input.keys['Space']) camera.position.y += speed * dt;
         if (input.keys['ControlLeft'] || input.keys['ControlRight']) camera.position.y -= speed * dt;
     }
@@ -1624,6 +1552,7 @@ function updateEditor(dt) {
     ray.setFromCamera(input.mouse, camera);
     const intersects = ray.intersectObjects(objects);
     
+    // TOOL LOGIC
     if (currentTool === 'eraser' || currentTool === 'pick') {
         if (intersects.length > 0) {
             const hitObj = intersects[0].object;
@@ -1646,9 +1575,8 @@ function updateEditor(dt) {
                      updateBuildScale();
                      document.querySelectorAll('.tool-item').forEach(e => {
                          e.classList.remove('selected');
-                         if(e.innerText.includes(currentBlockType)) e.classList.add('selected'); // loose match or ID match
+                         if(e.innerText.includes(currentBlockType)) e.classList.add('selected'); 
                      });
-                     // Reset to brush
                      selectToolMode('brush');
                      showToast("Picked: " + currentBlockType);
                 }
@@ -1658,7 +1586,7 @@ function updateEditor(dt) {
             ghostBox.visible = false;
         }
     } else {
-        // BRUSH / FILL
+        // BRUSH OR FILL
         let targetPos = new THREE.Vector3();
         let valid = false;
 
@@ -1672,7 +1600,6 @@ function updateEditor(dt) {
             targetPos.copy(hit.point).add(hit.face.normal.multiplyScalar(0.5));
             valid = true;
         } else {
-            // Default plane check
             const plane = new THREE.Plane(new THREE.Vector3(0,1,0), -buildLayerY);
             const intersection = ray.ray.intersectPlane(plane, targetPos);
             valid = !!intersection;
@@ -1680,12 +1607,9 @@ function updateEditor(dt) {
 
         if (valid) {
             const x = Math.round(targetPos.x);
-            // If normal placement, snap Y. If force layer, stick to buildLayerY.
-            // Using Math.floor/round on targetPos handles both generally if plane is at Integer Y.
-            const y = Math.floor(targetPos.y + 0.01); // Epsilon for float issues
+            const y = Math.floor(targetPos.y + 0.01); 
             const z = Math.round(targetPos.z);
             
-            // Limit Check for Ghost
             if (!devMode) {
                 if (Math.abs(x) > LIMITS.SIZE || Math.abs(z) > LIMITS.SIZE) valid = false;
                 if (y > LIMITS.LAYER_MAX || y < LIMITS.LAYER_MIN) valid = false;
@@ -1694,7 +1618,6 @@ function updateEditor(dt) {
             if (valid) {
                 // Ghost Visuals
                 if (currentTool === 'fill' && fillStart) {
-                    // Box Fill Preview
                     const minX = Math.min(fillStart.x, x);
                     const maxX = Math.max(fillStart.x, x);
                     const minY = Math.min(fillStart.y, y);
@@ -1702,22 +1625,18 @@ function updateEditor(dt) {
                     const minZ = Math.min(fillStart.z, z);
                     const maxZ = Math.max(fillStart.z, z);
                     
-                    const width = (maxX - minX) + 1; // Grid units
+                    const width = (maxX - minX) + 1; 
                     const height = (maxY - minY) + 1;
                     const depth = (maxZ - minZ) + 1;
                     
-                    // Ghost scaling for box selection
-                    // Scale applies to 1x1x1 geometry
                     ghostBox.scale.set(width, height, depth);
                     ghostBox.position.set(minX + (width-1)/2, minY, minZ + (depth-1)/2); 
                     ghostBox.material.color.setHex(0xff00ff);
                 } else {
-                    // Normal Build Ghost
                     ghostBox.position.set(x, y, z);
                     ghostBox.scale.set(buildScale.x, buildScale.y, buildScale.z);
                     ghostBox.material.color.setHex(0xffffff);
                 }
-                
                 ghostBox.visible = true;
 
                 if (input.mouseDown) {
@@ -1726,7 +1645,6 @@ function updateEditor(dt) {
                             fillStart = {x,y,z};
                             showToast("Start Point Set");
                         } else {
-                            // Perform Fill
                             const minX = Math.min(fillStart.x, x);
                             const maxX = Math.max(fillStart.x, x);
                             const minY = Math.min(fillStart.y, y);
@@ -1734,24 +1652,19 @@ function updateEditor(dt) {
                             const minZ = Math.min(fillStart.z, z);
                             const maxZ = Math.max(fillStart.z, z);
                             
-                            // Check count
-                            let count = 0;
-                            // Naive loop
-                             for(let ix=minX; ix<=maxX; ix++) {
-                                for(let iy=minY; iy<=maxY; iy++) {
-                                    for(let iz=minZ; iz<=maxZ; iz++) {
-                                        count++;
-                                    }
-                                }
-                            }
+                            let count = (maxX-minX+1)*(maxY-minY+1)*(maxZ-minZ+1);
                             
-                            if (count > 500) {
+                            if (!devMode && count > 500) {
                                 alert("Area too big! Max 500 blocks.");
                             } else {
-                                for(let ix=minX; ix<=maxX; ix++) {
-                                    for(let iy=minY; iy<=maxY; iy++) {
-                                        for(let iz=minZ; iz<=maxZ; iz++) {
-                                            addObject(ix, iy, iz, currentBlockType);
+                                if (currentBlockType === 'sign') {
+                                    alert("Cannot fill with Signs.");
+                                } else {
+                                    for(let ix=minX; ix<=maxX; ix++) {
+                                        for(let iy=minY; iy<=maxY; iy++) {
+                                            for(let iz=minZ; iz<=maxZ; iz++) {
+                                                addObject(ix, iy, iz, currentBlockType);
+                                            }
                                         }
                                     }
                                 }
@@ -1795,7 +1708,6 @@ function updateGame(dt) {
     const rayDown = new THREE.Raycaster(player.pos.clone().add(new THREE.Vector3(0, 0.1, 0)), new THREE.Vector3(0,-1,0), 0, 1.2);
     const floorHits = rayDown.intersectObjects(objects);
     
-    // Default physics
     player.friction = 10;
     player.speedMod = 1;
     player.onLadder = false;
@@ -1817,10 +1729,9 @@ function updateGame(dt) {
             }
         }
     } else {
-        player.friction = 2; // Air resistance
+        player.friction = 2; 
     }
 
-    // Gravity
     player.vel.y -= CONFIG.gravity * dt;
     
     const fwd = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
@@ -1847,34 +1758,20 @@ function updateGame(dt) {
     const subDt = dt / steps;
     
     for(let i=0; i<steps; i++) {
-        // Move X
         let candidate = player.pos.clone();
         candidate.x += player.vel.x * subDt;
-        // Lift feet check for walls
         let wallCheck = candidate.clone(); wallCheck.y += 0.05; 
-        
         const colX = checkCol(wallCheck);
-        if(!colX) {
-            player.pos.x = candidate.x;
-        } else {
-             if(colX.userData.isClimb) player.onLadder = true;
-             player.vel.x = 0;
-        }
+        if(!colX) player.pos.x = candidate.x;
+        else { if(colX.userData.isClimb) player.onLadder = true; player.vel.x = 0; }
 
-        // Move Z
         candidate = player.pos.clone();
         candidate.z += player.vel.z * subDt;
         wallCheck = candidate.clone(); wallCheck.y += 0.05;
-
         const colZ = checkCol(wallCheck);
-        if(!colZ) {
-            player.pos.z = candidate.z;
-        } else {
-            if(colZ.userData.isClimb) player.onLadder = true;
-            player.vel.z = 0;
-        }
+        if(!colZ) player.pos.z = candidate.z;
+        else { if(colZ.userData.isClimb) player.onLadder = true; player.vel.z = 0; }
 
-        // Move Y
         candidate = player.pos.clone();
         candidate.y += player.vel.y * subDt;
         const colY = checkCol(candidate);
@@ -1885,14 +1782,11 @@ function updateGame(dt) {
         } else {
             if(colY.userData.isClimb) player.onLadder = true;
 
-            if(player.vel.y < 0) { // Landing
+            if(player.vel.y < 0) { 
                 if(!player.onLadder) {
                     player.onGround = true;
-                    // Snap to top of box
-                    // We need the precise top of the colliding box
                     player.pos.y = colY.box.max.y; 
                     player.vel.y = 0;
-                    
                     if (colY.userData.bounce > 0) {
                         player.vel.y = CONFIG.jumpForce * colY.userData.bounce;
                         player.onGround = false;
@@ -1904,14 +1798,12 @@ function updateGame(dt) {
         }
     }
 
-    // Ladder Physics override
     if (player.onLadder) {
-        player.vel.y = 0; // stop gravity
+        player.vel.y = 0; 
         if(input.keys['KeyW']) player.vel.y = 6;
         if(input.keys['KeyS']) player.vel.y = -6;
-        if(input.keys['Space']) player.vel.y = 6; // Jump up ladder
-        // allow moving off ladder
-        player.pos.y += player.vel.y * dt; // Apply climb manually since gravity loop is done
+        if(input.keys['Space']) player.vel.y = 6; 
+        player.pos.y += player.vel.y * dt; 
     }
 
     const groundCheck = checkCol(player.pos.clone().sub(new THREE.Vector3(0, 0.05, 0)));
@@ -1923,23 +1815,18 @@ function updateGame(dt) {
     }
     
     if (input.keys['KeyR']) restartLevel();
-
     if (player.pos.y < -10) restartLevel();
 
     camera.position.copy(player.pos);
     camera.position.y += 1.5; 
 
-    // Custom Script Handling
     if(player.onGround && groundCheck && groundCheck.userData.script) {
-        try {
-            new Function('player', 'block', groundCheck.userData.script)(player, groundCheck.userData);
-        } catch(e) {}
+        try { new Function('player', 'block', groundCheck.userData.script)(player, groundCheck.userData); } catch(e) {}
     }
 
     const now = performance.now();
     objects.forEach(o => {
         if(o.userData.gameType === 'collectible') o.rotation.y += 3 * dt;
-        
         if (o.userData.isTurret) {
             o.lookAt(player.pos);
             const dist = player.pos.distanceTo(o.position);
@@ -1968,14 +1855,12 @@ function updateBullets(dt) {
         const b = bullets[i];
         b.life -= dt;
         b.mesh.position.addScaledVector(b.dir, 15 * dt);
-        
         if (b.mesh.position.distanceTo(player.pos) < 0.8) {
             if (!godMode) restartLevel();
             scene.remove(b.mesh);
             bullets.splice(i, 1);
             continue;
         }
-        
         if (checkCol(b.mesh.position) || b.life <= 0) {
             scene.remove(b.mesh);
             bullets.splice(i, 1);
@@ -1989,15 +1874,10 @@ function checkCol(pos) {
     const minY = pos.y, maxY = pos.y + player.height;
     const minZ = pos.z - r, maxZ = pos.z + r;
 
-    // Use Box3 for accurate AABB collision with scaled blocks
-    const playerBox = new THREE.Box3(
-        new THREE.Vector3(minX, minY, minZ),
-        new THREE.Vector3(maxX, maxY, maxZ)
-    );
+    const playerBox = new THREE.Box3(new THREE.Vector3(minX, minY, minZ), new THREE.Vector3(maxX, maxY, maxZ));
 
     for(let o of objects) {
         if (!o.visible || o.userData.gameType === 'spawn') continue;
-        
         const s = o.userData.scale || {x:1,y:1,z:1};
         const box = new THREE.Box3();
         box.min.set(o.position.x - 0.5*s.x, o.position.y, o.position.z - 0.5*s.z);
@@ -2014,48 +1894,205 @@ function checkCol(pos) {
                 winLevel();
                 return null;
             }
-            
             if (o.userData.gameType === 'hazard') {
                 if (!godMode) restartLevel();
                 return null;
             }
-
-            if (o.userData.isClimb) {
-                // Allow walking through but maybe set flag? 
-                // For now solid to keep simple or we can implement ladder logic
-                // If it's a ladder, we treat it as non-solid for X/Z but handle vertical?
-                // Simplest Voxel logic: Ladders are solid blocks you jump on.
-                // Or if we want climb:
-                if(input.keys['KeyW']) player.vel.y = 5;
-                return null; // Passthrough
-            }
-
             return { userData: o.userData, box: box };
         }
     }
     return null;
 }
 
-// --- BOOTSTRAP ---
-function createDemoLevels() {
-    const tutorial = {
-        id: 'lvl1', name: 'Tutorial',
-        objects: [
-            {x:0,y:0,z:0,type:'grass'}, {x:0,y:0,z:0,type:'spawn'}, 
-            {x:0,y:1,z:2,type:'sign', text:"WASD Move"},
-            {x:0,y:0,z:-1,type:'grass'}, {x:0,y:0,z:-2,type:'grass'},
-            {x:0,y:0,z:-3,type:'brick'}, {x:0,y:1,z:-3,type:'brick'},
-            {x:-2,y:1,z:-3,type:'sign', text:"Space Jump"},
-            {x:0,y:0,z:-4,type:'grass'}, {x:0,y:0,z:-5,type:'grass'},
-            {x:0,y:0,z:-6,type:'bounce'},
-            {x:2,y:1,z:-6,type:'sign', text:"Jump Pad"},
-            {x:0,y:3,z:-8,type:'brick'}, {x:0,y:3,z:-9,type:'brick'},
-            {x:0,y:3,z:-10,type:'goal'}
-        ]
-    };
-    project.levels = [tutorial];
-    project.currentLevelId = 'lvl1';
-    loadLevel('lvl1', true);
+// --- STATE MANAGEMENT ---
+
+function togglePlayMode() {
+    if (mode === 'edit') {
+        const spawn = objects.find(o => o.userData.type === 'spawn');
+        if (!spawn) { alert("Place a 'Start' point first!"); return; }
+        
+        saveCurrentLevelState(); 
+        player.pos.copy(spawn.position);
+        player.vel.set(0,0,0);
+        player.onGround = false;
+        score = 0;
+        gameEnded = false;
+        document.getElementById('coin-count').innerText = 0;
+        bullets.forEach(b => scene.remove(b.mesh));
+        bullets = [];
+        
+        objects.forEach(o => { if(o.userData.gameType === 'collectible') o.visible = true; });
+
+        mode = 'play';
+        document.body.requestPointerLock();
+        
+        document.getElementById('toolbar').style.display = 'none';
+        document.getElementById('palette').style.display = 'none';
+        document.getElementById('play-ui').style.display = 'block';
+        document.getElementById('crosshair').style.display = 'block';
+        document.getElementById('controls-info').style.display = 'none';
+        document.getElementById('credits').style.display = 'none';
+        gridHelper.visible = false;
+        ghostBox.visible = false;
+    } else {
+        stopGame();
+    }
+}
+
+function stopGame() {
+    if(isExported && (document.getElementById('game-over').style.display === 'flex')) return; 
+
+    mode = 'edit';
+    document.exitPointerLock();
+    
+    camera.position.set(0, 10, 10);
+    camera.lookAt(0,0,0);
+    camera.rotation.set(-0.5, 0, 0); 
+    
+    if(!isExported) {
+        document.getElementById('toolbar').style.display = 'flex';
+        document.getElementById('palette').style.display = 'flex';
+        document.getElementById('controls-info').style.display = 'block';
+        document.getElementById('credits').style.display = 'block';
+    }
+    document.getElementById('play-ui').style.display = 'none';
+    document.getElementById('crosshair').style.display = 'none';
+    document.getElementById('game-over').style.display = 'none';
+    gridHelper.visible = true;
+    ghostBox.visible = true;
+    bullets.forEach(b => scene.remove(b.mesh));
+    bullets = [];
+}
+
+function showPauseMenu() {
+    if(gameEnded) return;
+    document.getElementById('go-title').innerText = "PAUSED";
+    document.getElementById('btn-next-level').style.display = 'none';
+    document.getElementById('btn-resume').style.display = 'inline-block';
+    document.getElementById('game-over').style.display = 'flex';
+}
+
+function resumeGame() {
+    document.getElementById('game-over').style.display = 'none';
+    document.body.requestPointerLock();
+}
+
+function winLevel() {
+    gameEnded = true;
+    document.exitPointerLock();
+    const currIdx = project.levels.findIndex(l => l.id === project.currentLevelId);
+    const hasNext = currIdx !== -1 && currIdx < project.levels.length - 1;
+    document.getElementById('go-title').innerText = hasNext ? "LEVEL COMPLETE" : "GAME COMPLETE";
+    document.getElementById('btn-resume').style.display = 'none';
+    document.getElementById('btn-next-level').style.display = hasNext ? 'inline-block' : 'none';
+    document.getElementById('game-over').style.display = 'flex';
+}
+
+function nextLevel() {
+    const currIdx = project.levels.findIndex(l => l.id === project.currentLevelId);
+    if(currIdx !== -1 && currIdx < project.levels.length - 1) {
+        const nextId = project.levels[currIdx + 1].id;
+        loadLevel(nextId);
+        document.getElementById('game-over').style.display = 'none';
+        togglePlayMode();
+    }
+}
+
+function restartLevel() {
+    if (godMode && !gameEnded) return;
+    
+    if (isExported && !gameEnded) {
+        const spawn = objects.find(o => o.userData.type === 'spawn');
+        if(spawn) player.pos.copy(spawn.position);
+        player.vel.set(0,0,0);
+        gameEnded = false;
+        bullets.forEach(b => scene.remove(b.mesh));
+        bullets = [];
+        objects.forEach(o => { if(o.userData.gameType === 'collectible') o.visible = true; });
+        return; 
+    }
+
+    const spawn = objects.find(o => o.userData.type === 'spawn');
+    if(spawn) player.pos.copy(spawn.position);
+    player.vel.set(0,0,0);
+    gameEnded = false;
+    bullets.forEach(b => scene.remove(b.mesh));
+    bullets = [];
+    objects.forEach(o => { if(o.userData.gameType === 'collectible') o.visible = true; });
+    
+    if (document.getElementById('game-over').style.display === 'none') {
+    } else {
+        document.getElementById('game-over').style.display = 'none';
+        document.body.requestPointerLock();
+    }
+}
+
+// --- EVENTS ---
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+window.addEventListener('keydown', e => {
+    if(document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return; 
+    input.keys[e.code] = true;
+});
+
+window.addEventListener('keyup', e => input.keys[e.code] = false);
+
+window.addEventListener('mousedown', e => {
+    if(e.target !== renderer.domElement) return;
+
+    if(e.button === 0) input.mouseDown = true;
+    if(e.button === 2) {
+        input.rightDown = true;
+        if(mode === 'edit') document.body.style.cursor = 'grabbing';
+    }
+});
+window.addEventListener('mouseup', e => {
+    if(e.button === 0) input.mouseDown = false;
+    if(e.button === 2) {
+        input.rightDown = false;
+        if(mode === 'edit') document.body.style.cursor = 'default';
+    }
+});
+
+document.addEventListener('pointerlockchange', () => {
+    if(document.pointerLockElement !== document.body && mode === 'play') {
+        if(document.getElementById('game-over').style.display === 'none') {
+            showPauseMenu();
+        }
+    }
+});
+
+window.addEventListener('contextmenu', e => e.preventDefault());
+
+window.addEventListener('mousemove', e => {
+    input.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    input.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    if (mode === 'edit' && input.rightDown) {
+        const sensitivity = 0.003;
+        camera.rotation.y -= e.movementX * sensitivity;
+        camera.rotation.x -= e.movementY * sensitivity;
+        camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+    }
+
+    if (mode === 'play' && document.pointerLockElement === document.body) {
+        const sensitivity = 0.002;
+        camera.rotation.y -= e.movementX * sensitivity;
+        camera.rotation.x -= e.movementY * sensitivity;
+        camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+    }
+});
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.style.opacity = 1;
+    setTimeout(() => t.style.opacity = 0, 2000);
 }
 
 function init() {
@@ -2066,18 +2103,12 @@ function init() {
 
     if (window.IS_EXPORTED_GAME) {
         isExported = true;
-        
-        // CLEANUP
         const container = document.getElementById('canvas-container');
-        while (container.firstChild) {
-            container.removeChild(container.firstChild);
-        }
+        while (container.firstChild) container.removeChild(container.firstChild);
         container.appendChild(renderer.domElement);
 
         project = window.EXPORTED_PROJECT;
         document.body.classList.add('exported');
-        
-        // Load settings from localStorage if available
         userApiKey = localStorage.getItem('voxelverse_api_key') || "";
         aiEnabled = localStorage.getItem('voxelverse_ai_enabled') !== 'false';
         
@@ -2085,18 +2116,15 @@ function init() {
         const startId = project.currentLevelId || project.levels[0].id;
         loadLevel(startId, true); 
     } else {
-        // Load AI Settings
         userApiKey = localStorage.getItem('voxelverse_api_key') || "";
         aiEnabled = localStorage.getItem('voxelverse_ai_enabled') !== 'false';
         updateAiButtonVisibility();
-
         if(!localStorage.getItem('voxelverse_project')) {
             createDemoLevels();
         } else {
             loadProject();
         }
     }
-
     animate();
 }
 
@@ -2104,20 +2132,15 @@ const clock = new THREE.Clock();
 function animate() {
     requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.1);
-
     const time = performance.now();
     for(let i=TWEEN_REGISTRY.length-1; i>=0; i--) {
         if(TWEEN_REGISTRY[i].update(time)) TWEEN_REGISTRY.splice(i, 1);
     }
-
     if (mode === 'edit') updateEditor(dt);
     else updateGame(dt);
-
     renderer.render(scene, camera);
 }
-
 init();
-
 </script>
 </body>
 </html>
