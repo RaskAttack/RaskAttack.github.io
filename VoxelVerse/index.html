@@ -25,7 +25,6 @@
         }
 
         body.light-mode {
-            /* Light Theme */
             --bg-main: #f1f5f9;
             --bg-panel: rgba(255, 255, 255, 0.95);
             --bg-element: #ffffff;
@@ -37,7 +36,8 @@
 
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-main); color: var(--text-main); user-select: none; transition: background 0.3s, color 0.3s; }
         
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; z-index: 10; }
         
         #toolbar { 
             pointer-events: auto; 
@@ -73,7 +73,6 @@
         .btn:hover { background: var(--bg-element-hover); transform: translateY(-1px); }
         .btn:active { transform: translateY(0); }
         
-        /* Tool Button Styling */
         .btn.tool-btn { border-left: 3px solid transparent; }
         .btn.tool-btn.active { 
             background: rgba(56, 189, 248, 0.15); 
@@ -246,8 +245,13 @@
             <div class="logo">VoxelVerse</div>
             <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
             
+            <button class="btn tool-btn" onclick="undo()" title="Undo (Ctrl+Z)">↩️</button>
+            <button class="btn tool-btn" onclick="redo()" title="Redo (Ctrl+Y)">↪️</button>
+            <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
+
             <button class="btn tool-btn active" id="tool-brush" onclick="selectToolMode('brush')" title="Brush (Place Blocks)">🧱</button>
             <button class="btn tool-btn" id="tool-fill" onclick="selectToolMode('fill')" title="Box Fill">🔲</button>
+            <button class="btn tool-btn" id="tool-paint" onclick="selectToolMode('paint')" title="Paint">🎨</button>
             <button class="btn tool-btn" id="tool-eraser" onclick="selectToolMode('eraser')" title="Eraser">❌</button>
             <button class="btn tool-btn" id="tool-pick" onclick="selectToolMode('pick')" title="Picker">💉</button>
             
@@ -294,6 +298,8 @@
             <div class="row"><span>Up/Down</span> <span><span class="key">Space</span>/<span class="key">Ctrl</span></span></div>
             <div class="row"><span>Interact</span> <span><span class="key">L-Click</span></span></div>
             <div class="row"><span>Pick</span> <span><span class="key">R-Click</span> Block</span></div>
+            <div class="row"><span>Fast Fly</span> <span><span class="key">Shift</span></span></div>
+            <div class="row"><span>Undo/Redo</span> <span><span class="key">Ctrl</span>+<span class="key">Z</span>/<span class="key">Y</span></span></div>
         </div>
         
         <div id="credits">Made by oiPoipoi Games</div>
@@ -301,7 +307,7 @@
         <div id="play-ui">
             <div class="score-pill"><span>🪙</span> <span id="coin-count">0</span></div>
             <div style="margin-top: 10px; text-align: center; color: rgba(255,255,255,0.6); font-size: 12px; font-weight: 500;">
-                <span class="key" style="background: rgba(255,255,255,0.2);">ESC</span> Pause / <span class="key" style="background: rgba(255,255,255,0.2);">R</span> Restart / <span class="key" style="background: rgba(255,255,255,0.2);">Space</span> Jump / <span class="key" style="background: rgba(255,255,255,0.2);">W</span> Climb
+                <span class="key" style="background: rgba(255,255,255,0.2);">ESC</span> Pause / <span class="key" style="background: rgba(255,255,255,0.2);">R</span> Restart / <span class="key" style="background: rgba(255,255,255,0.2);">Space</span> Jump
             </div>
             <div id="god-mode-indicator">⚡ GOD MODE ACTIVE ⚡</div>
         </div>
@@ -459,11 +465,20 @@
 
 <script>
 /**
- * VOXELVERSE ENGINE v7.3
+ * VOXELVERSE ENGINE v8.0
  * Made by oiPoipoi Games
  */
 
-// --- TWEEN ENGINE (Moved Up to Fix Crash) ---
+// --- HELPERS ---
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    t.innerText = msg;
+    t.style.opacity = 1;
+    setTimeout(() => t.style.opacity = 0, 2000);
+}
+
+// --- TWEEN ENGINE ---
 const easingElastic = t => {
     const c4 = (2 * Math.PI) / 3;
     return t === 0 ? 0 : t === 1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4);
@@ -518,8 +533,8 @@ let project = {
     customBlocks: []
 };
 let objects = []; 
-let currentBlockType = 'brick'; // Renamed from selectedTool
-let currentTool = 'brush';      // 'brush', 'fill', 'eraser', 'pick'
+let currentBlockType = 'brick'; 
+let currentTool = 'brush';      
 let isExported = false;
 let devMode = false;
 let godMode = false;
@@ -536,6 +551,10 @@ let isFillMode = false;
 let isPainting = false;
 let fillStart = null; 
 
+// Undo/Redo Stacks
+let undoStack = [];
+let redoStack = [];
+
 // Physics State
 let player = {
     pos: new THREE.Vector3(0, 5, 0),
@@ -544,8 +563,7 @@ let player = {
     radius: 0.3,
     height: 1.6,
     friction: 10,
-    speedMod: 1,
-    onLadder: false
+    speedMod: 1
 };
 
 const input = { keys: {}, mouse: new THREE.Vector2(), mouseDown: false, rightDown: false };
@@ -601,8 +619,9 @@ function openModal(type) {
     
     modal.style.display = 'flex';
     input.value = '';
-    loading.style.display = 'none'; 
+    loading.style.display = 'none'; // reset loading
     
+    // Toggle content visibility
     defaultContent.style.display = 'none';
     exportContent.style.display = 'none';
     blockContent.style.display = 'none';
@@ -782,6 +801,56 @@ function floodFill(startIndex) {
     }
 }
 
+// --- UNDO / REDO ---
+function pushAction(action) {
+    undoStack.push(action);
+    if (undoStack.length > 50) undoStack.shift(); // Limit history
+    redoStack = []; // Clear redo on new action
+}
+
+function undo() {
+    if (undoStack.length === 0) return;
+    const action = undoStack.pop();
+    redoStack.push(action);
+    
+    if (action.type === 'add') {
+        const obj = objects.find(o => o.userData.id === action.id);
+        if (obj) removeObject(obj, false); // false = don't push to stack
+    } else if (action.type === 'remove') {
+        // Re-create object
+        const d = action.data;
+        // Need to recreate mesh exactly
+        const mesh = createMesh(d.type, d.x, d.y, d.z, d.text, d.scale);
+        mesh.userData.id = action.id; // Restore ID
+        scene.add(mesh);
+        objects.push(mesh);
+    } else if (action.type === 'paint') {
+        const obj = objects.find(o => o.userData.id === action.id);
+        if(obj) {
+             // obj.material.color.set(action.oldColor); // If we tracked color change
+             // For simplicity, paint only changes material type in this engine currently?
+             // Actually 'paint' tool isn't fully implemented logic yet, let's fix that.
+        }
+    }
+}
+
+function redo() {
+    if (redoStack.length === 0) return;
+    const action = redoStack.pop();
+    undoStack.push(action);
+    
+    if (action.type === 'add') {
+        const d = action.data;
+        const mesh = createMesh(d.type, d.x, d.y, d.z, d.text, d.scale);
+        mesh.userData.id = action.id;
+        scene.add(mesh);
+        objects.push(mesh);
+    } else if (action.type === 'remove') {
+        const obj = objects.find(o => o.userData.id === action.id);
+        if (obj) removeObject(obj, false);
+    }
+}
+
 // --- AI GENERATION ---
 async function generateLevelFromAI(prompt) {
     if (!userApiKey) {
@@ -794,17 +863,17 @@ async function generateLevelFromAI(prompt) {
     const loading = document.getElementById('loading-ai');
     loading.style.display = 'block';
     
-    const systemPrompt = `You are a Voxel Game Level Generator.
+    const systemPrompt = `You are a Voxel Game Level Generator expert (Architect).
     Coordinates: x (horiz), y (vert, 0=floor), z (depth).
-    Available Blocks: 'brick', 'grass', 'wood', 'ice' (slippery), 'mud' (slow), 'lava' (kill), 'bounce' (jump), 'coin', 'spawn' (START), 'goal' (END), 'turret' (shoot), 'tp' (teleport), 'speed', 'sand', 'stone', 'log', 'leaves', 'glass', 'light', 'ladder'.
+    Available Blocks: 'brick', 'grass', 'wood', 'ice', 'mud', 'lava', 'bounce', 'coin', 'spawn', 'goal', 'turret', 'tp', 'speed', 'sand', 'stone', 'log', 'leaves', 'glass', 'light', 'ladder', 'water', 'fence', 'crate'.
     
-    Task: Build a level based on the user request.
-    Rules:
-    1. Output strictly valid JSON array of objects: [{"x":0,"y":0,"z":0,"type":"grass"},...]
-    2. MUST include 1 'spawn' and 1 'goal'.
-    3. Make it playable (jumpable distances).
-    4. Use verticality! Don't just build on y=0.
-    5. Max 200 blocks.
+    Task: Create a sophisticated, playable level based on user request.
+    Guidelines:
+    1. Structure: Build walls, roofs, and floors if asked for a building. Use loops for repeating structures.
+    2. Playability: Ensure jumps are possible. Use stairs for height.
+    3. Output: Strictly valid JSON array of objects: [{"x":0,"y":0,"z":0,"type":"grass"},...].
+    4. Limits: Max 300 blocks to prevent lag, but use them wisely to create detail.
+    5. Essentials: Must have 1 'spawn' and 1 'goal'.
     `;
 
     try {
@@ -826,11 +895,13 @@ async function generateLevelFromAI(prompt) {
         const blocks = JSON.parse(jsonStr);
 
         if (Array.isArray(blocks)) {
+            // Undoable action? Too complex for single undo maybe.
             objects.forEach(o => scene.remove(o));
             objects = [];
+            undoStack = []; redoStack = []; // Reset history on new gen
             
             blocks.forEach(b => {
-                addObject(b.x, b.y, b.z, b.type);
+                addObject(b.x, b.y, b.z, b.type, null, null, false); // false = don't push to stack individual
             });
             showToast("Level Generated! ✨");
         }
@@ -977,105 +1048,132 @@ function getTexture(type, color, text, customPixels) {
     ctx.fillStyle = color;
     ctx.fillRect(0,0,128,128);
 
-    if (type === 'sign') {
-        ctx.fillStyle = "#e2e8f0";
-        ctx.fillRect(5,5,118,118); 
-        ctx.fillStyle = "#1e293b";
-        
-        const content = text || "Sign";
-        let fontSize = 20;
-        ctx.font = `bold ${fontSize}px Arial`;
-        let textWidth = ctx.measureText(content).width;
-        while(textWidth > 100 && fontSize > 10) {
-            fontSize--;
+    if (customPixels) {
+        const scale = 128 / 16;
+        for(let i=0; i<256; i++) {
+            const x = (i % 16) * scale;
+            const y = Math.floor(i / 16) * scale;
+            ctx.fillStyle = customPixels[i];
+            ctx.fillRect(x, y, scale, scale);
+        }
+    } else {
+        addNoise(ctx, 0.05);
+
+        if (type === 'sign') {
+            ctx.fillStyle = "#e2e8f0";
+            ctx.fillRect(5,5,118,118); 
+            ctx.fillStyle = "#1e293b";
+            const content = text || "Sign";
+            let fontSize = 20;
             ctx.font = `bold ${fontSize}px Arial`;
-            textWidth = ctx.measureText(content).width;
+            let textWidth = ctx.measureText(content).width;
+            while(textWidth > 100 && fontSize > 10) {
+                fontSize--;
+                ctx.font = `bold ${fontSize}px Arial`;
+                textWidth = ctx.measureText(content).width;
+            }
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(content, 64, 64);
+            ctx.strokeStyle = "#475569"; ctx.lineWidth = 5; ctx.strokeRect(5,5,118,118);
         }
-        ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText(content, 64, 64);
-        ctx.strokeStyle = "#475569"; ctx.lineWidth = 5; ctx.strokeRect(5,5,118,118);
-    }
-    else if (type === 'brick' || type === 'wood' || type === 'stone' || type === 'sand') {
-        ctx.strokeStyle = "rgba(0,0,0,0.2)";
-        ctx.lineWidth = 4;
-        ctx.strokeRect(0,0,128,128);
-        ctx.beginPath(); ctx.moveTo(0,64); ctx.lineTo(128,64); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(64,0); ctx.lineTo(64,64); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(64,64); ctx.lineTo(64,128); ctx.stroke(); 
-        if (type === 'stone') addNoise(ctx, 0.2); 
-        if (type === 'sand') addNoise(ctx, 0.3); 
-    } 
-    else if (type === 'log') {
-        ctx.strokeStyle = "#5d4037"; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.arc(64,64,50,0,Math.PI*2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(64,64,30,0,Math.PI*2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(64,64,10,0,Math.PI*2); ctx.stroke();
-    }
-    else if (type === 'leaves') {
-        ctx.fillStyle = "rgba(0,0,0,0.2)";
-        for(let i=0; i<40; i++) ctx.fillRect(Math.random()*110, Math.random()*110, 15, 15);
-    }
-    else if (type === 'grass') {
-        ctx.fillStyle = "rgba(255,255,255,0.1)";
-        for(let i=0; i<100; i++) ctx.fillRect(Math.random()*128,Math.random()*128, 4, 6);
-    }
-    else if (type === 'hazard') {
-        ctx.fillStyle = "#fbbf24"; 
-        for(let i=-128; i<128; i+=32) {
-            ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i+16,0); ctx.lineTo(i+144,128); ctx.lineTo(i+128,128); ctx.fill();
+        else if (type === 'brick' || type === 'wood' || type === 'stone' || type === 'sand' || type === 'crate') {
+            ctx.strokeStyle = "rgba(0,0,0,0.2)";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(0,0,128,128);
+            if (type === 'crate') {
+                ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(128,128); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(128,0); ctx.lineTo(0,128); ctx.stroke();
+                ctx.strokeRect(20,20,88,88);
+            } else {
+                ctx.beginPath(); ctx.moveTo(0,64); ctx.lineTo(128,64); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(64,0); ctx.lineTo(64,64); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(64,64); ctx.lineTo(64,128); ctx.stroke(); 
+            }
+            if (type === 'stone') addNoise(ctx, 0.2); 
+            if (type === 'sand') addNoise(ctx, 0.3); 
+        } 
+        else if (type === 'log') {
+            ctx.strokeStyle = "#5d4037"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(64,64,50,0,Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(64,64,30,0,Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(64,64,10,0,Math.PI*2); ctx.stroke();
         }
-    }
-    else if (type === 'bounce') {
-        ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.lineWidth=8;
-        ctx.beginPath(); ctx.arc(64,64,32,0,Math.PI*2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(64,64,16,0,Math.PI*2); ctx.stroke();
-    }
-    else if (type === 'speed') {
-        ctx.fillStyle = "rgba(255,255,255,0.3)";
-        ctx.beginPath(); ctx.moveTo(20,128); ctx.lineTo(64,0); ctx.lineTo(108,128); ctx.fill();
-    }
-    else if (type === 'turret') {
-        ctx.fillStyle = "#1e293b"; ctx.fillRect(16,16,96,96); 
-        ctx.fillStyle = "#ef4444"; ctx.beginPath(); ctx.arc(64,64,24,0,Math.PI*2); ctx.fill();
-        ctx.strokeStyle = "#475569"; ctx.lineWidth=6; ctx.strokeRect(16,16,96,96);
-    }
-    else if (type === 'teleport') {
-        ctx.fillStyle = "#1e1b4b"; ctx.fillRect(0,0,128,128);
-        ctx.strokeStyle = "#c084fc"; ctx.lineWidth=4;
-        for(let i=1; i<8; i++) {
-            ctx.beginPath(); ctx.arc(64,64, i*8, i*0.5, Math.PI+i*0.5); ctx.stroke();
+        else if (type === 'leaves') {
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            for(let i=0; i<40; i++) ctx.fillRect(Math.random()*110, Math.random()*110, 15, 15);
         }
-    }
-    else if (type === 'ice') {
-        ctx.fillStyle = "rgba(255,255,255,0.3)";
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(60,128); ctx.lineTo(128,0); ctx.fill();
-    }
-    else if (type === 'mud') {
-        addNoise(ctx, 0.4);
-    }
-    else if (type === 'goal') {
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0,0,64,64); ctx.fillRect(64,64,64,64);
-        ctx.fillStyle = '#000';
-        ctx.fillRect(64,0,64,64); ctx.fillRect(0,64,64,64);
-    }
-    else if (type === 'spawn') {
-        ctx.fillStyle = "#334155"; ctx.fillRect(0,0,128,128);
-        ctx.strokeStyle = "#38bdf8"; ctx.lineWidth=6;
-        ctx.beginPath(); ctx.arc(64,64,40,0,Math.PI*2); ctx.stroke();
-        ctx.fillStyle = "#38bdf8"; ctx.font="60px Arial"; ctx.textAlign="center"; ctx.fillText("H", 64, 84);
-    }
-    else if (type === 'ladder') {
-        ctx.strokeStyle = "#854d0e"; ctx.lineWidth = 8;
-        ctx.beginPath(); ctx.moveTo(32,0); ctx.lineTo(32,128); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(96,0); ctx.lineTo(96,128); ctx.stroke();
-        ctx.lineWidth = 6;
-        for(let i=16; i<128; i+=32) {
-            ctx.beginPath(); ctx.moveTo(32,i); ctx.lineTo(96,i); ctx.stroke();
+        else if (type === 'grass') {
+            ctx.fillStyle = "rgba(255,255,255,0.1)";
+            for(let i=0; i<100; i++) ctx.fillRect(Math.random()*128,Math.random()*128, 4, 6);
         }
-    }
-    else if (type === 'light') {
-        ctx.fillStyle = "#fef08a"; ctx.fillRect(32,32,64,64);
+        else if (type === 'water') {
+            ctx.fillStyle = "rgba(255,255,255,0.2)";
+            for(let i=0; i<20; i++) ctx.fillRect(Math.random()*100, Math.random()*100, 20, 2);
+        }
+        else if (type === 'fence') {
+            ctx.fillStyle = "rgba(0,0,0,0)"; ctx.clearRect(0,0,128,128);
+            ctx.fillStyle = color;
+            ctx.fillRect(48,0,32,128);
+        }
+        else if (type === 'hazard') {
+            ctx.fillStyle = "#fbbf24"; 
+            for(let i=-128; i<128; i+=32) {
+                ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i+16,0); ctx.lineTo(i+144,128); ctx.lineTo(i+128,128); ctx.fill();
+            }
+        }
+        else if (type === 'bounce') {
+            ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.lineWidth=8;
+            ctx.beginPath(); ctx.arc(64,64,32,0,Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(64,64,16,0,Math.PI*2); ctx.stroke();
+        }
+        else if (type === 'speed') {
+            ctx.fillStyle = "rgba(255,255,255,0.3)";
+            ctx.beginPath(); ctx.moveTo(20,128); ctx.lineTo(64,0); ctx.lineTo(108,128); ctx.fill();
+        }
+        else if (type === 'turret') {
+            ctx.fillStyle = "#1e293b"; ctx.fillRect(16,16,96,96); 
+            ctx.fillStyle = "#ef4444"; ctx.beginPath(); ctx.arc(64,64,24,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle = "rgba(255,255,255,0.8)"; ctx.beginPath(); ctx.arc(74,54,6,0,Math.PI*2); ctx.fill(); 
+            ctx.strokeStyle = "#475569"; ctx.lineWidth=6; ctx.strokeRect(16,16,96,96);
+        }
+        else if (type === 'teleport') {
+            ctx.fillStyle = "#1e1b4b"; ctx.fillRect(0,0,128,128);
+            ctx.strokeStyle = "#c084fc"; ctx.lineWidth=4;
+            for(let i=1; i<8; i++) {
+                ctx.beginPath(); ctx.arc(64,64, i*8, i*0.5, Math.PI+i*0.5); ctx.stroke();
+            }
+        }
+        else if (type === 'ice') {
+            ctx.fillStyle = "rgba(255,255,255,0.3)";
+            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(60,128); ctx.lineTo(128,0); ctx.fill();
+        }
+        else if (type === 'mud') {
+            addNoise(ctx, 0.4);
+        }
+        else if (type === 'goal') {
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0,0,64,64); ctx.fillRect(64,64,64,64);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(64,0,64,64); ctx.fillRect(0,64,64,64);
+        }
+        else if (type === 'spawn') {
+            ctx.fillStyle = "#334155"; ctx.fillRect(0,0,128,128);
+            ctx.strokeStyle = "#38bdf8"; ctx.lineWidth=6;
+            ctx.beginPath(); ctx.arc(64,64,40,0,Math.PI*2); ctx.stroke();
+            ctx.fillStyle = "#38bdf8"; ctx.font="60px Arial"; ctx.textAlign="center"; ctx.fillText("H", 64, 84);
+        }
+        else if (type === 'ladder') {
+            ctx.strokeStyle = "#854d0e"; ctx.lineWidth = 8;
+            ctx.beginPath(); ctx.moveTo(32,0); ctx.lineTo(32,128); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(96,0); ctx.lineTo(96,128); ctx.stroke();
+            ctx.lineWidth = 6;
+            for(let i=16; i<128; i+=32) {
+                ctx.beginPath(); ctx.moveTo(32,i); ctx.lineTo(96,i); ctx.stroke();
+            }
+        }
+        else if (type === 'light') {
+            ctx.fillStyle = "#fef08a"; ctx.fillRect(32,32,64,64);
+        }
     }
 
     const tex = new THREE.CanvasTexture(canvas);
@@ -1099,7 +1197,10 @@ let TOOLS = {
     'sand':  { name: 'Sand',  type: 'solid', color: '#fde047', tex: 'sand', icon: '🏜️' },
     'log':   { name: 'Log',   type: 'solid', color: '#78350f', tex: 'log', icon: '🌳' },
     'leaves':{ name: 'Leaves',type: 'solid', color: '#166534', tex: 'leaves', icon: '🍃' },
+    'crate': { name: 'Crate', type: 'solid', color: '#b45309', tex: 'crate', icon: '📦' },
+    'fence': { name: 'Fence', type: 'solid', color: '#a16207', tex: 'fence', icon: '🚧', shape: 'fence' },
     'glass': { name: 'Glass', type: 'solid', color: '#a5f3fc', tex: 'ice', icon: '🧊', opacity: 0.3 },
+    'water': { name: 'Water', type: 'mud',   color: '#3b82f6', tex: 'water', icon: '💧', opacity: 0.6, friction: 30, speed: 0.6 },
     'light': { name: 'Light', type: 'solid', color: '#fef08a', tex: 'light', icon: '💡', emissive: 0xffffee },
     'ladder':{ name: 'Ladder', type: 'climb', color: '#a16207', tex: 'ladder', icon: '🪜', isClimb: true },
     'ice':   { name: 'Ice',   type: 'solid', color: '#cffafe', tex: 'ice', icon: '❄️', friction: 1.0 },
@@ -1119,19 +1220,23 @@ const DEV_TOOLS = {
 
 function initPalette() {
     const p = document.getElementById('palette');
-    if (!p) return; 
+    if (!p) return; // Guard for export mode
     p.innerHTML = '';
     
+    // Add custom blocks to available tools
     const allTools = { ...TOOLS, ...(devMode ? DEV_TOOLS : {}) };
+    // Merge custom blocks
     if (project.customBlocks) {
-        project.customBlocks.forEach(cb => { allTools[cb.id] = cb; });
+        project.customBlocks.forEach(cb => {
+            allTools[cb.id] = cb;
+        });
     }
 
     Object.entries(allTools).forEach(([key, tool]) => {
         const el = document.createElement('div');
         el.className = `tool-item ${currentBlockType === key ? 'selected' : ''} ${devMode && DEV_TOOLS[key] ? 'dev-item' : ''} ${tool.isCustom ? 'custom-item' : ''}`;
         el.onclick = () => {
-            currentBlockType = key;
+            currentBlockType = key; // Select MATERIAL
             document.querySelectorAll('.tool-item').forEach(e => e.classList.remove('selected'));
             el.classList.add('selected');
         };
@@ -1149,9 +1254,14 @@ function createCustomBlockFromUI() {
     
     const id = 'custom_' + Date.now();
     const newBlock = {
-        id: id, name: name, color: color,
+        id: id,
+        name: name,
+        color: color,
         type: type === 'hazard' || type === 'bounce' || type === 'speed' ? 'solid' : 'solid', 
-        tex: 'custom', icon: '📦', isCustom: true, customPixels: [...painterPixels], 
+        tex: 'custom', 
+        icon: '📦',
+        isCustom: true,
+        customPixels: [...painterPixels], 
         gameType: type === 'hazard' ? 'hazard' : 'solid',
         bounce: type === 'bounce' ? force : 0,
         friction: type === 'ice' ? 0.05 : (type === 'mud' ? 50 : 10), 
@@ -1159,6 +1269,7 @@ function createCustomBlockFromUI() {
         script: script
     };
     
+    // Correct properties based on selection
     if (type === 'ice') newBlock.friction = 0.5;
     if (type === 'mud') newBlock.friction = 20;
 
@@ -1180,7 +1291,10 @@ function updateBuildLayer(val) {
     gridHelper.position.y = buildLayerY; 
 }
 
-function toggleForceLayer(checked) { forceLayer = checked; }
+function toggleForceLayer(checked) {
+    forceLayer = checked;
+}
+
 function updateBuildScale() {
     buildScale.x = parseFloat(document.getElementById('scale-x').value) || 1;
     buildScale.y = parseFloat(document.getElementById('scale-y').value) || 1;
@@ -1191,11 +1305,17 @@ function updateBuildScale() {
 
 function createMesh(type, x, y, z, text, scaleVal = {x:1,y:1,z:1}) {
     let data = TOOLS[type] || DEV_TOOLS[type];
-    if (!data && project.customBlocks) data = project.customBlocks.find(b => b.id === type);
+    if (!data && project.customBlocks) {
+        data = project.customBlocks.find(b => b.id === type);
+    }
+    
     if (!data) return null;
     
     let geo, mat;
-    const sx = scaleVal.x || 1; const sy = scaleVal.y || 1; const sz = scaleVal.z || 1;
+
+    const sx = scaleVal.x || 1;
+    const sy = scaleVal.y || 1;
+    const sz = scaleVal.z || 1;
 
     if (data.shape === 'coin') {
         geo = new THREE.CylinderGeometry(0.3 * Math.min(sx,sz), 0.3 * Math.min(sx,sz), 0.05 * sy, 16);
@@ -1206,12 +1326,16 @@ function createMesh(type, x, y, z, text, scaleVal = {x:1,y:1,z:1}) {
     } else if (data.shape === 'sign') {
         geo = new THREE.BoxGeometry(0.8 * sx, 0.8 * sy, 0.1 * sz);
         geo.translate(0, 0.5 * sy, 0);
+    } else if (data.shape === 'fence') {
+        geo = new THREE.BoxGeometry(0.2 * sx, 1 * sy, 0.2 * sz);
+        geo.translate(0, 0.5 * sy, 0);
     } else {
         geo = new THREE.BoxGeometry(1 * sx, 1 * sy, 1 * sz);
         geo.translate(0, 0.5 * sy, 0);
     }
 
     const matProps = { color: data.color };
+    // Pass custom pixels if available
     if (data.tex) matProps.map = getTexture(data.tex, data.color, text, data.customPixels); 
     if (data.opacity) { matProps.transparent = true; matProps.opacity = data.opacity; }
     if (data.emissive) { matProps.emissive = data.emissive; matProps.emissiveIntensity = 0.5; }
@@ -1235,7 +1359,8 @@ function createMesh(type, x, y, z, text, scaleVal = {x:1,y:1,z:1}) {
         lastFire: 0,
         text: text,
         scale: {x:sx, y:sy, z:sz},
-        script: data.script
+        script: data.script,
+        id: Math.random().toString(36).substr(2, 9) // unique ID for undo/redo
     };
     
     mesh.scale.set(0,0,0);
@@ -1244,20 +1369,25 @@ function createMesh(type, x, y, z, text, scaleVal = {x:1,y:1,z:1}) {
     return mesh;
 }
 
-function addObject(x, y, z, type, text = null, scaleOverride = null) {
+function addObject(x, y, z, type, text = null, scaleOverride = null, pushToStack = true) {
     if (currentTool === 'eraser' || currentTool === 'pick') return; 
 
+    // LIMIT CHECK
     if (!devMode && objects.length >= LIMITS.BLOCKS) {
         if(!isFillMode) showToast("Block Limit Reached! (2000)");
         return;
     }
 
-    const exist = objects.find(o => Math.abs(o.position.x - x) < 0.1 && Math.abs(o.position.y - y) < 0.1 && Math.abs(o.position.z - z) < 0.1);
+    const exist = objects.find(o => 
+        Math.abs(o.position.x - x) < 0.1 && 
+        Math.abs(o.position.y - y) < 0.1 && 
+        Math.abs(o.position.z - z) < 0.1
+    );
     if (exist) return;
 
     if (type === 'spawn') {
         const oldSpawn = objects.find(o => o.userData.type === 'spawn');
-        if(oldSpawn) removeObject(oldSpawn);
+        if(oldSpawn) removeObject(oldSpawn, true); // Push removal of old spawn
     }
 
     const s = scaleOverride || buildScale;
@@ -1265,12 +1395,31 @@ function addObject(x, y, z, type, text = null, scaleOverride = null) {
     if(mesh) {
         scene.add(mesh);
         objects.push(mesh);
+        
+        if(pushToStack) {
+            pushAction({ type: 'add', id: mesh.userData.id, data: { type, x, y, z, text, scale: s } });
+        }
     }
 }
 
-function removeObject(obj) {
+function removeObject(obj, pushToStack = true) {
     scene.remove(obj);
     objects = objects.filter(o => o !== obj);
+    
+    if (pushToStack) {
+        pushAction({ 
+            type: 'remove', 
+            id: obj.userData.id, 
+            data: { 
+                type: obj.userData.type, 
+                x: obj.position.x, 
+                y: obj.position.y, 
+                z: obj.position.z, 
+                text: obj.userData.text,
+                scale: obj.userData.scale
+            } 
+        });
+    }
 }
 
 function clearCurrentLevel() {
@@ -1279,6 +1428,7 @@ function clearCurrentLevel() {
     objects = [];
     addObject(0, 0, 0, 'grass');
     addObject(0, 1, 0, 'spawn');
+    undoStack = []; redoStack = []; // Clear history on wipe
 }
 
 // --- LEVEL SYSTEM ---
@@ -1297,18 +1447,25 @@ function getLevelList() {
 }
 
 function saveCurrentLevelState() {
+    // Safety check: if level was deleted, currentLevelId might point to nothing
     const lvl = project.levels.find(l => l.id === project.currentLevelId);
     if(!lvl) return; 
+    
     lvl.objects = objects.map(o => ({
         type: o.userData.type,
-        x: o.position.x, y: o.position.y, z: o.position.z,
-        text: o.userData.text, scale: o.userData.scale 
+        x: o.position.x,
+        y: o.position.y,
+        z: o.position.z,
+        text: o.userData.text,
+        scale: o.userData.scale 
     }));
 }
 
 function loadLevel(id, skipSave = false) {
-    if(mode === 'edit' && !skipSave && project.levels.find(l => l.id === project.currentLevelId)) {
-        saveCurrentLevelState();
+    // CRITICAL FIX: Only save if we are editing AND the level exists
+    if(mode === 'edit' && !skipSave) {
+        const currentLvl = project.levels.find(l => l.id === project.currentLevelId);
+        if(currentLvl) saveCurrentLevelState();
     }
     
     objects.forEach(o => scene.remove(o));
@@ -1323,6 +1480,7 @@ function loadLevel(id, skipSave = false) {
         let s = data.scale;
         if (typeof s === 'number') s = {x:s, y:s, z:s};
         if (!s) s = {x:1, y:1, z:1};
+
         const mesh = createMesh(data.type, data.x, data.y, data.z, data.text, s);
         if(mesh) {
             scene.add(mesh);
@@ -1351,8 +1509,8 @@ function deleteLevel() {
     
     const newId = project.levels[0].id;
     project.currentLevelId = newId; 
-    objects = []; 
-    loadLevel(newId, true); 
+    objects = []; // Important: Clear objects so we don't save old state to new ID
+    loadLevel(newId, true); // Skip save
 }
 
 function switchLevel(id) {
@@ -1381,7 +1539,7 @@ function loadProject() {
     }
     
     if (devMode) initPalette();
-    loadLevel(project.levels[0].id);
+    loadLevel(project.levels[0].id, true); // true = don't save over it
     showToast("Project Loaded!");
 }
 
@@ -1441,8 +1599,8 @@ function performExport(title, btnText) {
     showToast("Exported index.html!");
 }
 
-function openExportModal() {
-    openExportModal(); // Re-use modal logic
+function exportGame() {
+    openExportModal();
 }
 
 function openImport() {
@@ -1466,21 +1624,23 @@ function handleFileSelect(input) {
                 const raw = content.substring(start, end);
                 const json = decodeURIComponent(Array.prototype.map.call(atob(raw), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
                 const importedProject = JSON.parse(json);
+                
                 project = importedProject;
                 if(project.customBlocks) initPalette(); 
+                
                 const startId = project.currentLevelId || project.levels[0].id;
-                loadLevel(startId); 
+                loadLevel(startId, true); // true = skip save
                 showToast("Game Imported!");
             } catch (err) { console.error(err); showToast("Error parsing file."); }
         } else {
-             // Fallback for older saves
+            // Fallback
             const match = content.match(/const\s+raw\s*=\s*"([^"]+)"/);
             if(match && match[1]) {
                  try {
                     const raw = match[1];
                     const json = decodeURIComponent(Array.prototype.map.call(atob(raw), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
                     project = JSON.parse(json);
-                    loadLevel(project.levels[0].id);
+                    loadLevel(project.levels[0].id, true);
                     showToast("Legacy Game Imported!");
                  } catch(e) { showToast("Invalid File"); }
             } else {
@@ -1490,6 +1650,70 @@ function handleFileSelect(input) {
     };
     reader.readAsText(file);
     input.value = '';
+}
+
+// --- UNDO / REDO ---
+function pushAction(action) {
+    undoStack.push(action);
+    if (undoStack.length > 50) undoStack.shift(); 
+    redoStack = []; 
+}
+
+function undo() {
+    if (undoStack.length === 0) return;
+    const action = undoStack.pop();
+    redoStack.push(action);
+    
+    if (action.type === 'add') {
+        const obj = objects.find(o => o.userData.id === action.id);
+        if (obj) removeObject(obj, false); 
+    } else if (action.type === 'remove') {
+        const d = action.data;
+        const mesh = createMesh(d.type, d.x, d.y, d.z, d.text, d.scale);
+        mesh.userData.id = action.id; 
+        scene.add(mesh);
+        objects.push(mesh);
+    } else if (action.type === 'paint') {
+        // Restore old visual type
+        const obj = objects.find(o => o.userData.id === action.id);
+        if(obj) {
+             // To fully implement paint undo, we need to track mesh replacement
+             // For now, simple object swap
+             removeObject(obj, false);
+             const d = action.oldData;
+             const mesh = createMesh(d.type, d.x, d.y, d.z, d.text, d.scale);
+             mesh.userData.id = action.id;
+             scene.add(mesh);
+             objects.push(mesh);
+        }
+    }
+}
+
+function redo() {
+    if (redoStack.length === 0) return;
+    const action = redoStack.pop();
+    undoStack.push(action);
+    
+    if (action.type === 'add') {
+        const d = action.data;
+        const mesh = createMesh(d.type, d.x, d.y, d.z, d.text, d.scale);
+        mesh.userData.id = action.id;
+        scene.add(mesh);
+        objects.push(mesh);
+    } else if (action.type === 'remove') {
+        const obj = objects.find(o => o.userData.id === action.id);
+        if (obj) removeObject(obj, false);
+    } else if (action.type === 'paint') {
+        const obj = objects.find(o => o.userData.id === action.id);
+        if(obj) {
+             removeObject(obj, false);
+             const d = action.newData;
+             const mesh = createMesh(d.type, d.x, d.y, d.z, d.text, d.scale);
+             mesh.userData.id = action.id;
+             scene.add(mesh);
+             objects.push(mesh);
+        }
+    }
 }
 
 // --- DEMO LEVELS ---
@@ -1509,6 +1733,7 @@ function createDemoLevels() {
             {x:0,y:3,z:-10,type:'goal'}
         ]
     };
+    
     const parkour = {
         id: 'lvl2', name: 'Parkour',
         objects: [
@@ -1519,6 +1744,7 @@ function createDemoLevels() {
             {x:6,y:5,z:-12,type:'goal'}
         ]
     };
+
     project.levels = [tutorial, parkour];
     project.currentLevelId = 'lvl1';
     loadLevel('lvl1', true);
@@ -1535,31 +1761,42 @@ scene.add(ghostBox);
 function updateEditor(dt) {
     const speed = input.keys['ShiftLeft'] ? 20 : 10;
     
-    // Rotation handled in mousemove
+    if (input.rightDown) {
+        const sensitivity = 0.003;
+        // Rotation handled in mousemove
+    }
+
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+
+    if (input.keys['KeyW']) camera.position.add(forward.multiplyScalar(speed * dt));
+    if (input.keys['KeyS']) camera.position.add(forward.multiplyScalar(-speed * dt));
+    if (input.keys['KeyA']) camera.position.add(right.multiplyScalar(-speed * dt));
+    if (input.keys['KeyD']) camera.position.add(right.multiplyScalar(speed * dt));
     
-    if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
-        if (input.keys['KeyW']) camera.position.add(forward.multiplyScalar(speed * dt));
-        if (input.keys['KeyS']) camera.position.add(forward.multiplyScalar(-speed * dt));
-        if (input.keys['KeyA']) camera.position.add(right.multiplyScalar(-speed * dt));
-        if (input.keys['KeyD']) camera.position.add(right.multiplyScalar(speed * dt));
-        if (input.keys['Space']) camera.position.y += speed * dt;
-        if (input.keys['ControlLeft'] || input.keys['ControlRight']) camera.position.y -= speed * dt;
-    }
+    if (input.keys['Space']) camera.position.y += speed * dt;
+    if (input.keys['ControlLeft'] || input.keys['ControlRight']) camera.position.y -= speed * dt;
+    
+    // Listen for Undo/Redo Shortcuts
+    if(input.keys['ControlLeft'] && input.keys['KeyZ']) { undo(); input.keys['KeyZ']=false; }
+    if(input.keys['ControlLeft'] && input.keys['KeyY']) { redo(); input.keys['KeyY']=false; }
 
     const ray = new THREE.Raycaster();
     ray.setFromCamera(input.mouse, camera);
     const intersects = ray.intersectObjects(objects);
     
-    // TOOL LOGIC
-    if (currentTool === 'eraser' || currentTool === 'pick') {
+    if (currentTool === 'eraser' || currentTool === 'pick' || currentTool === 'paint') {
         if (intersects.length > 0) {
             const hitObj = intersects[0].object;
             ghostBox.position.copy(hitObj.position);
             const s = hitObj.userData.scale || {x:1,y:1,z:1};
             ghostBox.scale.set(s.x*1.05, s.y*1.05, s.z*1.05); 
-            const color = currentTool === 'eraser' ? 0xff0000 : 0x00ff00;
+            
+            let color = 0xffffff;
+            if(currentTool==='eraser') color = 0xff0000;
+            if(currentTool==='pick') color = 0x00ff00;
+            if(currentTool==='paint') color = 0x38bdf8;
+            
             ghostBox.material.color.setHex(color);
             ghostBox.visible = true;
             
@@ -1579,6 +1816,23 @@ function updateEditor(dt) {
                      });
                      selectToolMode('brush');
                      showToast("Picked: " + currentBlockType);
+                } else if (currentTool === 'paint') {
+                    // Paint Logic: Remove old, Add new in same spot with new type
+                    const oldData = {
+                         type: hitObj.userData.type,
+                         x: hitObj.position.x, y: hitObj.position.y, z: hitObj.position.z,
+                         text: hitObj.userData.text, scale: hitObj.userData.scale
+                    };
+                    removeObject(hitObj, false); // don't push remove to stack
+                    const mesh = createMesh(currentBlockType, oldData.x, oldData.y, oldData.z, oldData.text, oldData.scale);
+                    scene.add(mesh);
+                    objects.push(mesh);
+                    
+                    const newData = {
+                        type: currentBlockType, x: oldData.x, y: oldData.y, z: oldData.z, text: oldData.text, scale: oldData.scale
+                    };
+                    
+                    pushAction({ type:'paint', id: mesh.userData.id, oldData: oldData, newData: newData });
                 }
                 input.mouseDown = false;
             }
@@ -1660,6 +1914,8 @@ function updateEditor(dt) {
                                 if (currentBlockType === 'sign') {
                                     alert("Cannot fill with Signs.");
                                 } else {
+                                    // Group fill for undo? For now individual
+                                    // Better: composite action
                                     for(let ix=minX; ix<=maxX; ix++) {
                                         for(let iy=minY; iy<=maxY; iy++) {
                                             for(let iz=minZ; iz<=maxZ; iz++) {
@@ -1708,16 +1964,14 @@ function updateGame(dt) {
     const rayDown = new THREE.Raycaster(player.pos.clone().add(new THREE.Vector3(0, 0.1, 0)), new THREE.Vector3(0,-1,0), 0, 1.2);
     const floorHits = rayDown.intersectObjects(objects);
     
-    player.friction = 10;
-    player.speedMod = 1;
-    player.onLadder = false;
-
     if (floorHits.length > 0 && player.onGround) {
         const floorObj = floorHits[0].object;
         player.friction = floorObj.userData.friction;
         player.speedMod = floorObj.userData.speed;
         
-        if (floorObj.userData.gameType === 'hazard' && !godMode) restartLevel();
+        if (floorObj.userData.gameType === 'hazard' && !godMode) {
+            restartLevel();
+        }
 
         if (floorObj.userData.isTP) {
             const targets = objects.filter(o => o.userData.isTP && o !== floorObj);
@@ -1730,6 +1984,7 @@ function updateGame(dt) {
         }
     } else {
         player.friction = 2; 
+        player.speedMod = 1;
     }
 
     player.vel.y -= CONFIG.gravity * dt;
@@ -1758,20 +2013,32 @@ function updateGame(dt) {
     const subDt = dt / steps;
     
     for(let i=0; i<steps; i++) {
+        // Move X
         let candidate = player.pos.clone();
         candidate.x += player.vel.x * subDt;
-        let wallCheck = candidate.clone(); wallCheck.y += 0.05; 
-        const colX = checkCol(wallCheck);
-        if(!colX) player.pos.x = candidate.x;
-        else { if(colX.userData.isClimb) player.onLadder = true; player.vel.x = 0; }
+        // Lift feet slightly to ignore floor friction
+        let wallCheck = candidate.clone();
+        wallCheck.y += 0.05; 
+        
+        if(!checkCol(wallCheck)) {
+            player.pos.x = candidate.x;
+        } else {
+            player.vel.x = 0;
+        }
 
+        // Move Z
         candidate = player.pos.clone();
         candidate.z += player.vel.z * subDt;
-        wallCheck = candidate.clone(); wallCheck.y += 0.05;
-        const colZ = checkCol(wallCheck);
-        if(!colZ) player.pos.z = candidate.z;
-        else { if(colZ.userData.isClimb) player.onLadder = true; player.vel.z = 0; }
+        wallCheck = candidate.clone();
+        wallCheck.y += 0.05;
 
+        if(!checkCol(wallCheck)) {
+            player.pos.z = candidate.z;
+        } else {
+            player.vel.z = 0;
+        }
+
+        // Move Y
         candidate = player.pos.clone();
         candidate.y += player.vel.y * subDt;
         const colY = checkCol(candidate);
@@ -1780,17 +2047,16 @@ function updateGame(dt) {
             player.pos.y = candidate.y;
             player.onGround = false;
         } else {
-            if(colY.userData.isClimb) player.onLadder = true;
-
-            if(player.vel.y < 0) { 
-                if(!player.onLadder) {
-                    player.onGround = true;
-                    player.pos.y = colY.box.max.y; 
-                    player.vel.y = 0;
-                    if (colY.userData.bounce > 0) {
-                        player.vel.y = CONFIG.jumpForce * colY.userData.bounce;
-                        player.onGround = false;
-                    }
+            if(player.vel.y < 0) { // Landing
+                player.onGround = true;
+                // Snap to top of box
+                // We need the precise top of the colliding box
+                player.pos.y = colY.box.max.y; 
+                player.vel.y = 0;
+                
+                if (colY.userData.bounce > 0) {
+                    player.vel.y = CONFIG.jumpForce * colY.userData.bounce;
+                    player.onGround = false;
                 }
             } else { 
                 player.vel.y = 0;
@@ -1798,35 +2064,25 @@ function updateGame(dt) {
         }
     }
 
-    if (player.onLadder) {
-        player.vel.y = 0; 
-        if(input.keys['KeyW']) player.vel.y = 6;
-        if(input.keys['KeyS']) player.vel.y = -6;
-        if(input.keys['Space']) player.vel.y = 6; 
-        player.pos.y += player.vel.y * dt; 
-    }
-
     const groundCheck = checkCol(player.pos.clone().sub(new THREE.Vector3(0, 0.05, 0)));
-    const canJump = player.onGround || (groundCheck !== null) || player.onLadder;
+    const canJump = player.onGround || (groundCheck !== null);
 
-    if (input.keys['Space'] && canJump && !player.onLadder) {
+    if (input.keys['Space'] && canJump) {
         player.vel.y = CONFIG.jumpForce;
         player.onGround = false;
     }
     
     if (input.keys['KeyR']) restartLevel();
+
     if (player.pos.y < -10) restartLevel();
 
     camera.position.copy(player.pos);
     camera.position.y += 1.5; 
 
-    if(player.onGround && groundCheck && groundCheck.userData.script) {
-        try { new Function('player', 'block', groundCheck.userData.script)(player, groundCheck.userData); } catch(e) {}
-    }
-
     const now = performance.now();
     objects.forEach(o => {
         if(o.userData.gameType === 'collectible') o.rotation.y += 3 * dt;
+        
         if (o.userData.isTurret) {
             o.lookAt(player.pos);
             const dist = player.pos.distanceTo(o.position);
@@ -1855,12 +2111,14 @@ function updateBullets(dt) {
         const b = bullets[i];
         b.life -= dt;
         b.mesh.position.addScaledVector(b.dir, 15 * dt);
+        
         if (b.mesh.position.distanceTo(player.pos) < 0.8) {
             if (!godMode) restartLevel();
             scene.remove(b.mesh);
             bullets.splice(i, 1);
             continue;
         }
+        
         if (checkCol(b.mesh.position) || b.life <= 0) {
             scene.remove(b.mesh);
             bullets.splice(i, 1);
@@ -1874,16 +2132,22 @@ function checkCol(pos) {
     const minY = pos.y, maxY = pos.y + player.height;
     const minZ = pos.z - r, maxZ = pos.z + r;
 
-    const playerBox = new THREE.Box3(new THREE.Vector3(minX, minY, minZ), new THREE.Vector3(maxX, maxY, maxZ));
+    // Use Box3 for accurate AABB collision with scaled blocks
+    const playerBox = new THREE.Box3(
+        new THREE.Vector3(minX, minY, minZ),
+        new THREE.Vector3(maxX, maxY, maxZ)
+    );
 
     for(let o of objects) {
         if (!o.visible || o.userData.gameType === 'spawn') continue;
+        
         const s = o.userData.scale || {x:1,y:1,z:1};
         const box = new THREE.Box3();
         box.min.set(o.position.x - 0.5*s.x, o.position.y, o.position.z - 0.5*s.z);
         box.max.set(o.position.x + 0.5*s.x, o.position.y + s.y, o.position.z + 0.5*s.z);
 
         if (box.intersectsBox(playerBox)) {
+            // Triggers
             if (o.userData.gameType === 'collectible') {
                 o.visible = false;
                 score++;
@@ -1894,10 +2158,14 @@ function checkCol(pos) {
                 winLevel();
                 return null;
             }
+            
+            // Hazard
             if (o.userData.gameType === 'hazard') {
                 if (!godMode) restartLevel();
                 return null;
             }
+
+            // Solid - Return data + BOX for physics resolution
             return { userData: o.userData, box: box };
         }
     }
@@ -1921,11 +2189,14 @@ function togglePlayMode() {
         bullets.forEach(b => scene.remove(b.mesh));
         bullets = [];
         
-        objects.forEach(o => { if(o.userData.gameType === 'collectible') o.visible = true; });
+        objects.forEach(o => {
+            if(o.userData.gameType === 'collectible') o.visible = true;
+        });
 
         mode = 'play';
         document.body.requestPointerLock();
         
+        // Hide UI via Style
         document.getElementById('toolbar').style.display = 'none';
         document.getElementById('palette').style.display = 'none';
         document.getElementById('play-ui').style.display = 'block';
@@ -1934,13 +2205,17 @@ function togglePlayMode() {
         document.getElementById('credits').style.display = 'none';
         gridHelper.visible = false;
         ghostBox.visible = false;
+
     } else {
         stopGame();
     }
 }
 
 function stopGame() {
-    if(isExported && (document.getElementById('game-over').style.display === 'flex')) return; 
+    // If exported, disable exit on win/death via game over screens
+    if(isExported && (document.getElementById('game-over').style.display === 'flex')) {
+        return; // Block exit
+    }
 
     mode = 'edit';
     document.exitPointerLock();
@@ -1980,9 +2255,12 @@ function resumeGame() {
 function winLevel() {
     gameEnded = true;
     document.exitPointerLock();
+    
     const currIdx = project.levels.findIndex(l => l.id === project.currentLevelId);
     const hasNext = currIdx !== -1 && currIdx < project.levels.length - 1;
+
     document.getElementById('go-title').innerText = hasNext ? "LEVEL COMPLETE" : "GAME COMPLETE";
+    
     document.getElementById('btn-resume').style.display = 'none';
     document.getElementById('btn-next-level').style.display = hasNext ? 'inline-block' : 'none';
     document.getElementById('game-over').style.display = 'flex';
@@ -1993,6 +2271,7 @@ function nextLevel() {
     if(currIdx !== -1 && currIdx < project.levels.length - 1) {
         const nextId = project.levels[currIdx + 1].id;
         loadLevel(nextId);
+        
         document.getElementById('game-over').style.display = 'none';
         togglePlayMode();
     }
@@ -2001,6 +2280,7 @@ function nextLevel() {
 function restartLevel() {
     if (godMode && !gameEnded) return;
     
+    // Auto restart if exported and game over screen hidden or died
     if (isExported && !gameEnded) {
         const spawn = objects.find(o => o.userData.type === 'spawn');
         if(spawn) player.pos.copy(spawn.position);
@@ -2009,7 +2289,7 @@ function restartLevel() {
         bullets.forEach(b => scene.remove(b.mesh));
         bullets = [];
         objects.forEach(o => { if(o.userData.gameType === 'collectible') o.visible = true; });
-        return; 
+        return; // Don't show menu
     }
 
     const spawn = objects.find(o => o.userData.type === 'spawn');
@@ -2073,6 +2353,7 @@ window.addEventListener('mousemove', e => {
     input.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     input.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
+    // EDITOR: Always rotate if Right Click is held
     if (mode === 'edit' && input.rightDown) {
         const sensitivity = 0.003;
         camera.rotation.y -= e.movementX * sensitivity;
@@ -2088,13 +2369,6 @@ window.addEventListener('mousemove', e => {
     }
 });
 
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.innerText = msg;
-    t.style.opacity = 1;
-    setTimeout(() => t.style.opacity = 0, 2000);
-}
-
 function init() {
     initPalette();
     camera.rotation.order = 'YXZ'; 
@@ -2103,12 +2377,18 @@ function init() {
 
     if (window.IS_EXPORTED_GAME) {
         isExported = true;
+        
+        // CLEANUP
         const container = document.getElementById('canvas-container');
-        while (container.firstChild) container.removeChild(container.firstChild);
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
         container.appendChild(renderer.domElement);
 
         project = window.EXPORTED_PROJECT;
         document.body.classList.add('exported');
+        
+        // Load settings from localStorage if available
         userApiKey = localStorage.getItem('voxelverse_api_key') || "";
         aiEnabled = localStorage.getItem('voxelverse_ai_enabled') !== 'false';
         
@@ -2116,15 +2396,18 @@ function init() {
         const startId = project.currentLevelId || project.levels[0].id;
         loadLevel(startId, true); 
     } else {
+        // Load AI Settings
         userApiKey = localStorage.getItem('voxelverse_api_key') || "";
         aiEnabled = localStorage.getItem('voxelverse_ai_enabled') !== 'false';
         updateAiButtonVisibility();
+
         if(!localStorage.getItem('voxelverse_project')) {
             createDemoLevels();
         } else {
             loadProject();
         }
     }
+
     animate();
 }
 
@@ -2132,15 +2415,20 @@ const clock = new THREE.Clock();
 function animate() {
     requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.1);
+
     const time = performance.now();
     for(let i=TWEEN_REGISTRY.length-1; i>=0; i--) {
         if(TWEEN_REGISTRY[i].update(time)) TWEEN_REGISTRY.splice(i, 1);
     }
+
     if (mode === 'edit') updateEditor(dt);
     else updateGame(dt);
+
     renderer.render(scene, camera);
 }
+
 init();
+
 </script>
 </body>
 </html>
