@@ -1,4 +1,8 @@
-body {
+html {
   background-image: url("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRPMA6vrs5LCYPznnRq3lhS0p4xybKavRgPIA&s");
   backround-size: cover;
+}
+
+h1 {
+  color: aqua;
 }
