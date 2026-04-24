@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Robot Animator Pro v3</title>
+    <title>Robot Animator Pro v4</title>
     <style>
         body { font-family: sans-serif; background: #1e1e2e; color: #cdd6f4; text-align: center; padding: 20px; margin: 0; }
         .card { background: #313244; padding: 25px; border-radius: 12px; display: inline-block; max-width: 600px; width: 100%; box-shadow: 0 8px 16px rgba(0,0,0,0.6); }
@@ -44,7 +44,7 @@
     </div>
 
     <div class="card">
-        <h2>🤖 Robot Animator Pro v3</h2>
+        <h2>🤖 Robot Animator Pro v4</h2>
         <button id="connect" class="success">🔌 Connect to Robot via USB</button>
         <p id="status" style="color: #f9e2af; font-weight: bold;">Status: Disconnected</p>
         
@@ -52,7 +52,7 @@
         
         <hr style="border-color: #585b70; margin: 20px 0;">
         
-        <h3>🎬 Current Animation</h3>
+        <h3>🎬 Animation & Playback</h3>
         <button class="success" onclick="saveFrame()">➕ Save Pose to Frame</button>
         <button class="danger" onclick="clearFrames()">🗑️ Clear Frames</button>
         <p>Active Frames: <span id="frameCount" style="font-weight:bold; color:#a6e3a1; font-size: 1.2em;">0</span></p>
@@ -64,10 +64,21 @@
                 <input type="checkbox" id="loop-toggle"> 🔁 Loop Current
             </label>
         </div>
+
+        <div class="controls-row" style="background: #181825; padding: 15px; border-radius: 8px; margin-top: 10px;">
+            <div style="display: flex; flex-direction: column; align-items: center; width: 45%;">
+                <label style="font-weight: bold; color: #89b4fa; margin-bottom: 5px;">Frame Speed: <span id="speed-val">600</span>ms</label>
+                <input type="range" id="frame-speed" min="100" max="2000" step="50" value="600" oninput="document.getElementById('speed-val').innerText = this.value">
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; width: 45%;">
+                <label style="font-weight: bold; color: #cba6f7; margin-bottom: 5px;">Macro Pause: <span id="pause-val">1.0</span>s</label>
+                <input type="range" id="macro-pause" min="0" max="5000" step="100" value="1000" oninput="document.getElementById('pause-val').innerText = (this.value/1000).toFixed(1)">
+            </div>
+        </div>
         
         <hr style="border-color: #585b70; margin: 20px 0;">
 
-        <h3>💾 Library Controls</h3>
+        <h3>💾 Library & Macros</h3>
         <div class="controls-row">
             <select id="slotSelect"></select>
             <button class="success" onclick="saveToSlot()">💾 Save to Slot</button>
@@ -138,11 +149,12 @@
             document.getElementById('frameCount').innerText = "0";
         }
 
-        // --- PLAYBACK & MACRO ENGINE ---
+        // --- PLAYBACK ENGINE ---
         let isPlaying = false;
         let isPaused = false;
         let playIndex = 0;
         let isMacroPlaying = false; 
+        let activeLoopId = 0; // The zombie loop killer
 
         async function togglePlay() {
             if (currentFrames.length === 0) return alert("Add some frames first!");
@@ -150,8 +162,9 @@
             if (!isPlaying) {
                 isPlaying = true;
                 isPaused = false;
+                activeLoopId++; // kill other loops
                 document.getElementById('play-btn').innerText = "⏸️ Pause";
-                playLoop();
+                playLoop(activeLoopId);
             } else if (!isPaused) {
                 isPaused = true;
                 document.getElementById('play-btn').innerText = "▶️ Resume";
@@ -165,11 +178,12 @@
             isPlaying = false;
             isPaused = false;
             isMacroPlaying = false; 
+            activeLoopId++; // Kills any pending wait cycles instantly
             playIndex = 0;
+            
             document.getElementById('play-btn').innerText = "▶️ Play";
             document.getElementById('status').innerText = port ? "Status: Connected!" : "Status: Disconnected";
             
-            // Reset Macro UI buttons
             let ssBtn = document.getElementById('slideshow-btn');
             let shBtn = document.getElementById('shuffle-btn');
             if (ssBtn && shBtn) {
@@ -183,8 +197,8 @@
             }
         }
 
-        async function playLoop() {
-            while (isPlaying) {
+        async function playLoop(loopId) {
+            while (isPlaying && loopId === activeLoopId) {
                 if (isPaused) {
                     await new Promise(r => setTimeout(r, 100));
                     continue;
@@ -210,16 +224,18 @@
                     
                     if (writer) await writer.write(new TextEncoder().encode(`ALL:${frame.join(',')}\n`));
                     playIndex++;
-                    await new Promise(r => setTimeout(r, 600)); 
+                    
+                    // Use custom delay from the slider
+                    let speedMs = parseInt(document.getElementById('frame-speed').value);
+                    await new Promise(r => setTimeout(r, speedMs)); 
                 }
             }
             
-            if(!isMacroPlaying) stopPlay();
+            if(!isMacroPlaying && loopId === activeLoopId) stopPlay();
         }
 
-        // Slideshow & Shuffle Logic (Infinite Loop)
+        // --- SLIDESHOW & SHUFFLE MACROS ---
         async function toggleMacro(shuffle) {
-            // If it's already running, clicking the button again stops it
             if(isMacroPlaying) {
                 stopPlay();
                 return;
@@ -229,12 +245,13 @@
             for(let i=0; i<15; i++) {
                 if(savedAnimations[i] && savedAnimations[i].length > 0) activeSlots.push(i);
             }
-            
             if(activeSlots.length === 0) return alert("Your library is empty! Save some slots first.");
             
+            stopPlay(); // Clean slate
+            activeLoopId++; 
+            let macroLoopId = activeLoopId;
             isMacroPlaying = true;
             
-            // Update UI to show toggle state
             if (shuffle) {
                 document.getElementById('shuffle-btn').innerText = "⏹️ Stop Shuffle";
                 document.getElementById('shuffle-btn').className = "danger";
@@ -245,17 +262,12 @@
                 document.getElementById('shuffle-btn').disabled = true;
             }
 
-            // Infinite loop while toggled ON
-            while (isMacroPlaying) {
+            while (isMacroPlaying && macroLoopId === activeLoopId) {
                 let playSequence = [...activeSlots];
-                
-                // If shuffle is active, re-randomize the order every new loop cycle
-                if(shuffle) {
-                    playSequence.sort(() => Math.random() - 0.5);
-                }
+                if(shuffle) playSequence.sort(() => Math.random() - 0.5);
 
                 for(let slot of playSequence) {
-                    if(!isMacroPlaying) break; 
+                    if(!isMacroPlaying || macroLoopId !== activeLoopId) break; 
 
                     currentFrames = JSON.parse(JSON.stringify(savedAnimations[slot]));
                     document.getElementById('frameCount').innerText = currentFrames.length;
@@ -266,16 +278,15 @@
                     isPaused = false;
                     document.getElementById('play-btn').innerText = "⏸️ Pause";
                     
-                    await playLoop(); 
+                    await playLoop(macroLoopId); 
 
-                    if(!isMacroPlaying) break; 
+                    if(!isMacroPlaying || macroLoopId !== activeLoopId) break; 
 
-                    document.getElementById('status').innerText = `Status: 1.5s Delay...`;
-                    await new Promise(r => setTimeout(r, 1500));
+                    let pauseMs = parseInt(document.getElementById('macro-pause').value);
+                    document.getElementById('status').innerText = `Status: ${(pauseMs/1000).toFixed(1)}s Delay...`;
+                    await new Promise(r => setTimeout(r, pauseMs));
                 }
             }
-
-            stopPlay(); 
         }
 
         // --- LOCAL STORAGE MANAGER ---
@@ -354,7 +365,6 @@
                 } else {
                     finishImport();
                 }
-
             } catch(e) {
                 alert("Invalid code! Make sure you copied the entire array.");
             }
@@ -370,28 +380,18 @@
 
         function resolveConflict(decision) {
             let conf = importConflicts[currentConflictIndex];
-            
-            if (decision === 'local') {
-                pendingImportData[conf.slot] = conf.local;
-            } else if (decision === 'import') {
-                pendingImportData[conf.slot] = conf.imp;
-            } else if (decision === 'merge') {
-                pendingImportData[conf.slot] = conf.local.concat(conf.imp);
-            }
+            if (decision === 'local') pendingImportData[conf.slot] = conf.local;
+            else if (decision === 'import') pendingImportData[conf.slot] = conf.imp;
+            else if (decision === 'merge') pendingImportData[conf.slot] = conf.local.concat(conf.imp);
 
             currentConflictIndex++;
-            if (currentConflictIndex < importConflicts.length) {
-                showConflictUI();
-            } else {
-                document.getElementById('conflict-modal').style.display = "none";
-                finishImport();
-            }
+            if (currentConflictIndex < importConflicts.length) showConflictUI();
+            else { document.getElementById('conflict-modal').style.display = "none"; finishImport(); }
         }
 
         function cancelImport() {
             document.getElementById('conflict-modal').style.display = "none";
-            importConflicts = [];
-            pendingImportData = [];
+            importConflicts = []; pendingImportData = [];
             alert("Import cancelled. Your local saves were not changed.");
         }
 
