@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Robot Animator Pro</title>
+    <style>
+        body { font-family: sans-serif; background: #1e1e2e; color: #cdd6f4; text-align: center; padding: 20px; margin: 0; }
+        .card { background: #313244; padding: 25px; border-radius: 12px; display: inline-block; max-width: 550px; width: 100%; box-shadow: 0 8px 16px rgba(0,0,0,0.6); }
+        h2, h3 { margin-top: 0; color: #89b4fa; }
+        .slider-container { display: flex; justify-content: space-between; align-items: center; margin: 12px 0; background: #45475a; padding: 10px; border-radius: 8px; }
+        input[type=range] { flex-grow: 1; margin: 0 15px; cursor: pointer; }
+        button { padding: 8px 12px; margin: 4px; cursor: pointer; border-radius: 6px; border: none; background: #89b4fa; color: #11111b; font-weight: bold; transition: 0.2s; }
+        button:hover { background: #b4befe; }
+        button:disabled { background: #585b70; color: #a6adc8; cursor: not-allowed; }
+        .danger { background: #f38ba8; } .danger:hover { background: #eba0ac; }
+        .success { background: #a6e3a1; } .success:hover { background: #94e2d5; }
+        .warning { background: #f9e2af; } .warning:hover { background: #f5e0dc; }
+        textarea { width: 90%; height: 60px; margin-top: 10px; background: #11111b; color: #a6e3a1; border: 1px solid #585b70; padding: 10px; font-family: monospace; border-radius: 6px; resize: vertical; }
+        select { padding: 8px; border-radius: 6px; background: #11111b; color: #cdd6f4; border: 1px solid #585b70; font-weight: bold; }
+        .controls-row { display: flex; justify-content: center; gap: 10px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>🤖 Robot Animator Pro</h2>
+        <button id="connect" class="success">🔌 Connect to Robot via USB</button>
+        <p id="status" style="color: #f9e2af; font-weight: bold;">Status: Disconnected</p>
+        
+        <div id="sliders"></div>
+        
+        <hr style="border-color: #585b70; margin: 20px 0;">
+        
+        <h3>🎬 Current Animation</h3>
+        <button class="success" onclick="saveFrame()">➕ Save Pose to Frame</button>
+        <button class="danger" onclick="clearFrames()">🗑️ Clear Frames</button>
+        <p>Active Frames: <span id="frameCount" style="font-weight:bold; color:#a6e3a1; font-size: 1.2em;">0</span></p>
+        
+        <div class="controls-row" style="background: #181825; padding: 15px; border-radius: 8px;">
+            <button id="play-btn" class="success" onclick="togglePlay()">▶️ Play</button>
+            <button class="danger" onclick="stopPlay()">⏹️ Stop</button>
+        </div>
+        
+        <hr style="border-color: #585b70; margin: 20px 0;">
+
+        <h3>💾 Local Storage (15 Slots)</h3>
+        <div class="controls-row">
+            <select id="slotSelect"></select>
+            <button class="success" onclick="saveToSlot()">💾 Save to Slot</button>
+            <button class="warning" onclick="loadFromSlot()">📂 Load Slot</button>
+        </div>
+
+        <hr style="border-color: #585b70; margin: 20px 0;">
+        
+        <h3>📦 Backup Everything</h3>
+        <button onclick="exportAll()">⬇️ Export All 15 Slots</button>
+        <button onclick="importAll()" class="warning">⬆️ Import All</button>
+        <textarea id="io-box" placeholder="Exported code for ALL 15 slots will appear here. Paste code here to import and overwrite everything."></textarea>
+    </div>
+
+    <script>
+        let port, writer;
+        const currentPos = [90, 90, 90, 90, 90, 90, 90];
+        let currentFrames = [];
+        
+        // Load 15 slots from browser local storage, or create empty ones
+        let savedAnimations = JSON.parse(localStorage.getItem('robotAnims')) || Array(15).fill(null);
+
+        // UI Setup (Skipping Servo 2)
+        const servoNames = ['Base (0)', 'Shoulders (1 & 2)', 'Hidden', 'Elbow (3)', 'Wrist Pitch (4)', 'Wrist Roll (5)', 'Gripper (6)'];
+        const sliderDiv = document.getElementById('sliders');
+        for(let i=0; i<7; i++) {
+            if(i === 2) continue; // Skip generating UI for Servo 2
+            sliderDiv.innerHTML += `
+                <div class="slider-container">
+                    <span style="width: 140px; text-align: left;">${servoNames[i]}</span>
+                    <input type="range" id="s${i}" min="0" max="180" value="90" oninput="updateServo(${i}, this.value)">
+                    <span id="v${i}" style="width:35px; text-align:right; font-weight:bold;">90°</span>
+                </div>`;
+        }
+
+        // Initialize Dropdown
+        updateSlotDropdown();
+
+        // Connect USB
+        document.getElementById('connect').onclick = async () => {
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 9600 });
+                writer = port.writable.getWriter();
+                document.getElementById('status').innerText = "Status: Connected!";
+                document.getElementById('status').style.color = "#a6e3a1";
+                document.getElementById('connect').style.display = "none";
+            } catch (err) {
+                alert("Connection failed! Make sure you are running this on a secure site (HTTPS).");
+            }
+        };
+
+        // Move single servo
+        async function updateServo(index, value) {
+            currentPos[index] = parseInt(value);
+            document.getElementById(`v${index}`).innerText = value + "°";
+            if (writer) {
+                await writer.write(new TextEncoder().encode(`ALL:${currentPos.join(',')}\n`));
+            }
+        }
+
+        // --- ANIMATION CREATION ---
+        function saveFrame() {
+            currentFrames.push([...currentPos]);
+            document.getElementById('frameCount').innerText = currentFrames.length;
+        }
+
+        function clearFrames() {
+            stopPlay();
+            currentFrames = [];
+            document.getElementById('frameCount').innerText = "0";
+        }
+
+        // --- PLAYBACK ENGINE ---
+        let isPlaying = false;
+        let isPaused = false;
+        let playIndex = 0;
+
+        async function togglePlay() {
+            if (currentFrames.length === 0) return alert("Add some frames first!");
+
+            if (!isPlaying) {
+                isPlaying = true;
+                isPaused = false;
+                document.getElementById('play-btn').innerText = "⏸️ Pause";
+                playLoop();
+            } else if (!isPaused) {
+                isPaused = true;
+                document.getElementById('play-btn').innerText = "▶️ Resume";
+            } else {
+                isPaused = false;
+                document.getElementById('play-btn').innerText = "⏸️ Pause";
+            }
+        }
+
+        function stopPlay() {
+            isPlaying = false;
+            isPaused = false;
+            playIndex = 0;
+            document.getElementById('play-btn').innerText = "▶️ Play";
+        }
+
+        async function playLoop() {
+            while (isPlaying && playIndex < currentFrames.length) {
+                if (isPaused) {
+                    await new Promise(r => setTimeout(r, 100)); // Wait while paused
+                    continue;
+                }
+                
+                let frame = currentFrames[playIndex];
+                
+                // Update UI sliders and underlying currentPos array
+                frame.forEach((val, i) => {
+                    currentPos[i] = val;
+                    if (i !== 2) {
+                        document.getElementById(`s${i}`).value = val;
+                        document.getElementById(`v${i}`).innerText = val + "°";
+                    }
+                });
+                
+                // Send to Arduino
+                if (writer) {
+                    await writer.write(new TextEncoder().encode(`ALL:${frame.join(',')}\n`));
+                }
+                
+                playIndex++;
+                await new Promise(r => setTimeout(r, 600)); // Speed between frames
+            }
+            
+            // Reached the end
+            if (playIndex >= currentFrames.length) {
+                stopPlay();
+            }
+        }
+
+        // --- LOCAL STORAGE MANAGER ---
+        function updateSlotDropdown() {
+            const select = document.getElementById('slotSelect');
+            select.innerHTML = '';
+            for(let i=0; i<15; i++) {
+                let count = savedAnimations[i] ? savedAnimations[i].length : 0;
+                let label = count > 0 ? `Slot ${i+1} (${count} frames)` : `Slot ${i+1} (Empty)`;
+                select.innerHTML += `<option value="${i}">${label}</option>`;
+            }
+        }
+
+        function saveToSlot() {
+            if(currentFrames.length === 0) return alert("No active frames to save!");
+            const slot = parseInt(document.getElementById('slotSelect').value);
+            
+            // Create a deep copy of the frames and save to local storage
+            savedAnimations[slot] = JSON.parse(JSON.stringify(currentFrames));
+            localStorage.setItem('robotAnims', JSON.stringify(savedAnimations));
+            
+            updateSlotDropdown();
+            document.getElementById('slotSelect').value = slot; // keep selection
+            alert(`Saved ${currentFrames.length} frames to Slot ${slot+1}!`);
+        }
+
+        function loadFromSlot() {
+            const slot = parseInt(document.getElementById('slotSelect').value);
+            if(!savedAnimations[slot]) return alert("That slot is empty!");
+            
+            stopPlay(); // Stop any current playback
+            currentFrames = JSON.parse(JSON.stringify(savedAnimations[slot]));
+            document.getElementById('frameCount').innerText = currentFrames.length;
+            
+            // Snap robot to first frame of loaded animation
+            updateServo(0, currentFrames[0][0]); // Triggering one updates the array, but let's just update UI
+            currentFrames[0].forEach((val, i) => {
+                if(i !== 2) { document.getElementById(`s${i}`).value = val; document.getElementById(`v${i}`).innerText = val + "°"; }
+                currentPos[i] = val;
+            });
+            if(writer) writer.write(new TextEncoder().encode(`ALL:${currentFrames[0].join(',')}\n`));
+
+            alert(`Loaded Slot ${slot+1}!`);
+        }
+
+        // --- EXPORT / IMPORT ALL ---
+        function exportAll() {
+            document.getElementById('io-box').value = JSON.stringify(savedAnimations);
+            alert("All 15 slots exported! Copy the text in the box and save it somewhere safe.");
+        }
+
+        function importAll() {
+            try {
+                const data = JSON.parse(document.getElementById('io-box').value);
+                if(Array.isArray(data) && data.length === 15) {
+                    savedAnimations = data;
+                    localStorage.setItem('robotAnims', JSON.stringify(savedAnimations));
+                    updateSlotDropdown();
+                    alert("Successfully imported and overwrote all 15 slots!");
+                } else {
+                    alert("Invalid format! The code must contain exactly 15 slots.");
+                }
+            } catch(e) {
+                alert("Invalid code! Make sure you copied the entire exported string.");
+            }
+        }
+    </script>
+</body>
+</html>
+
