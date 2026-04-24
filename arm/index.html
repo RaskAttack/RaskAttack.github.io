@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Robot Animator Pro v2</title>
+    <title>Robot Animator Pro v3</title>
     <style>
         body { font-family: sans-serif; background: #1e1e2e; color: #cdd6f4; text-align: center; padding: 20px; margin: 0; }
         .card { background: #313244; padding: 25px; border-radius: 12px; display: inline-block; max-width: 600px; width: 100%; box-shadow: 0 8px 16px rgba(0,0,0,0.6); }
@@ -10,7 +10,7 @@
         input[type=range] { flex-grow: 1; margin: 0 15px; cursor: pointer; }
         button { padding: 8px 12px; margin: 4px; cursor: pointer; border-radius: 6px; border: none; background: #89b4fa; color: #11111b; font-weight: bold; transition: 0.2s; }
         button:hover { background: #b4befe; }
-        button:disabled { background: #585b70; color: #a6adc8; cursor: not-allowed; }
+        button:disabled { background: #585b70; color: #a6adc8; cursor: not-allowed; opacity: 0.7; }
         .danger { background: #f38ba8; } .danger:hover { background: #eba0ac; }
         .success { background: #a6e3a1; } .success:hover { background: #94e2d5; }
         .warning { background: #f9e2af; } .warning:hover { background: #f5e0dc; }
@@ -44,7 +44,7 @@
     </div>
 
     <div class="card">
-        <h2>🤖 Robot Animator Pro v2</h2>
+        <h2>🤖 Robot Animator Pro v3</h2>
         <button id="connect" class="success">🔌 Connect to Robot via USB</button>
         <p id="status" style="color: #f9e2af; font-weight: bold;">Status: Disconnected</p>
         
@@ -74,8 +74,8 @@
             <button class="warning" onclick="loadFromSlot()">📂 Load Slot</button>
         </div>
         <div class="controls-row" style="margin-top:15px;">
-            <button class="purple" onclick="playMacro(false)">🎞️ Slideshow All</button>
-            <button class="purple" onclick="playMacro(true)">🔀 Shuffle All</button>
+            <button id="slideshow-btn" class="purple" onclick="toggleMacro(false)">🎞️ Slideshow All</button>
+            <button id="shuffle-btn" class="purple" onclick="toggleMacro(true)">🔀 Shuffle All</button>
         </div>
 
         <hr style="border-color: #585b70; margin: 20px 0;">
@@ -142,7 +142,7 @@
         let isPlaying = false;
         let isPaused = false;
         let playIndex = 0;
-        let isMacroPlaying = false; // Tracks if Slideshow/Shuffle is active
+        let isMacroPlaying = false; 
 
         async function togglePlay() {
             if (currentFrames.length === 0) return alert("Add some frames first!");
@@ -164,10 +164,23 @@
         function stopPlay() {
             isPlaying = false;
             isPaused = false;
-            isMacroPlaying = false; // Kills slideshows too
+            isMacroPlaying = false; 
             playIndex = 0;
             document.getElementById('play-btn').innerText = "▶️ Play";
             document.getElementById('status').innerText = port ? "Status: Connected!" : "Status: Disconnected";
+            
+            // Reset Macro UI buttons
+            let ssBtn = document.getElementById('slideshow-btn');
+            let shBtn = document.getElementById('shuffle-btn');
+            if (ssBtn && shBtn) {
+                ssBtn.innerText = "🎞️ Slideshow All";
+                ssBtn.className = "purple";
+                ssBtn.disabled = false;
+                
+                shBtn.innerText = "🔀 Shuffle All";
+                shBtn.className = "purple";
+                shBtn.disabled = false;
+            }
         }
 
         async function playLoop() {
@@ -178,11 +191,10 @@
                 }
                 
                 if (playIndex >= currentFrames.length) {
-                    // Loop logic (ignored during slideshows)
                     if (document.getElementById('loop-toggle').checked && !isMacroPlaying) {
                         playIndex = 0; 
                     } else {
-                        break; // End animation
+                        break; 
                     }
                 }
 
@@ -198,16 +210,20 @@
                     
                     if (writer) await writer.write(new TextEncoder().encode(`ALL:${frame.join(',')}\n`));
                     playIndex++;
-                    await new Promise(r => setTimeout(r, 600)); // Playback speed
+                    await new Promise(r => setTimeout(r, 600)); 
                 }
             }
             
             if(!isMacroPlaying) stopPlay();
         }
 
-        // Slideshow & Shuffle Logic
-        async function playMacro(shuffle) {
-            if(isMacroPlaying) return;
+        // Slideshow & Shuffle Logic (Infinite Loop)
+        async function toggleMacro(shuffle) {
+            // If it's already running, clicking the button again stops it
+            if(isMacroPlaying) {
+                stopPlay();
+                return;
+            }
             
             let activeSlots = [];
             for(let i=0; i<15; i++) {
@@ -216,37 +232,50 @@
             
             if(activeSlots.length === 0) return alert("Your library is empty! Save some slots first.");
             
-            if(shuffle) {
-                // Randomize array
-                activeSlots.sort(() => Math.random() - 0.5);
-            }
-
             isMacroPlaying = true;
             
-            for(let slot of activeSlots) {
-                if(!isMacroPlaying) break; // User hit stop
-
-                // Load slot into current view
-                currentFrames = JSON.parse(JSON.stringify(savedAnimations[slot]));
-                document.getElementById('frameCount').innerText = currentFrames.length;
-                document.getElementById('status').innerText = `Status: Playing Slot ${slot + 1}...`;
-                
-                // Play it
-                playIndex = 0;
-                isPlaying = true;
-                isPaused = false;
-                document.getElementById('play-btn').innerText = "⏸️ Pause";
-                
-                await playLoop(); // Waits until this specific animation finishes
-
-                if(!isMacroPlaying) break; // Check if user hit stop during playback
-
-                // 1.5 Second Delay between animations
-                document.getElementById('status').innerText = `Status: 1.5s Delay...`;
-                await new Promise(r => setTimeout(r, 1500));
+            // Update UI to show toggle state
+            if (shuffle) {
+                document.getElementById('shuffle-btn').innerText = "⏹️ Stop Shuffle";
+                document.getElementById('shuffle-btn').className = "danger";
+                document.getElementById('slideshow-btn').disabled = true;
+            } else {
+                document.getElementById('slideshow-btn').innerText = "⏹️ Stop Slideshow";
+                document.getElementById('slideshow-btn').className = "danger";
+                document.getElementById('shuffle-btn').disabled = true;
             }
 
-            stopPlay(); // Reset UI when totally done
+            // Infinite loop while toggled ON
+            while (isMacroPlaying) {
+                let playSequence = [...activeSlots];
+                
+                // If shuffle is active, re-randomize the order every new loop cycle
+                if(shuffle) {
+                    playSequence.sort(() => Math.random() - 0.5);
+                }
+
+                for(let slot of playSequence) {
+                    if(!isMacroPlaying) break; 
+
+                    currentFrames = JSON.parse(JSON.stringify(savedAnimations[slot]));
+                    document.getElementById('frameCount').innerText = currentFrames.length;
+                    document.getElementById('status').innerText = `Status: Playing Slot ${slot + 1}...`;
+                    
+                    playIndex = 0;
+                    isPlaying = true;
+                    isPaused = false;
+                    document.getElementById('play-btn').innerText = "⏸️ Pause";
+                    
+                    await playLoop(); 
+
+                    if(!isMacroPlaying) break; 
+
+                    document.getElementById('status').innerText = `Status: 1.5s Delay...`;
+                    await new Promise(r => setTimeout(r, 1500));
+                }
+            }
+
+            stopPlay(); 
         }
 
         // --- LOCAL STORAGE MANAGER ---
@@ -278,7 +307,6 @@
             currentFrames = JSON.parse(JSON.stringify(savedAnimations[slot]));
             document.getElementById('frameCount').innerText = currentFrames.length;
             
-            // Snap to first frame
             currentFrames[0].forEach((val, i) => {
                 if(i !== 2) { document.getElementById(`s${i}`).value = val; document.getElementById(`v${i}`).innerText = val + "°"; }
                 currentPos[i] = val;
@@ -305,21 +333,17 @@
                 importConflicts = [];
                 pendingImportData = Array(15).fill(null);
                 
-                // Compare local vs import
                 for(let i=0; i<15; i++) {
                     let local = savedAnimations[i];
                     let imp = data[i];
                     
                     if (imp && imp.length > 0) {
                         if (local && local.length > 0 && JSON.stringify(local) !== JSON.stringify(imp)) {
-                            // CONFLICT: Both exist and are different
                             importConflicts.push({ slot: i, local: local, imp: imp });
                         } else {
-                            // Safe to overwrite (local is empty or identical)
                             pendingImportData[i] = imp;
                         }
                     } else {
-                        // Import is empty, keep local
                         pendingImportData[i] = local;
                     }
                 }
@@ -352,7 +376,6 @@
             } else if (decision === 'import') {
                 pendingImportData[conf.slot] = conf.imp;
             } else if (decision === 'merge') {
-                // Append import frames to the end of local frames
                 pendingImportData[conf.slot] = conf.local.concat(conf.imp);
             }
 
