@@ -272,20 +272,32 @@
             let wiimote = null, isWiiCalibrated = false, wiiCalib = {x: 128, y: 128, z: 128}, gripperClosed = false, lastB = false;
 
             window.connectWiimote = async function() {
-                if (!navigator.hid) return alert("WebHID is not supported.");
-                try {
-                    const devices = await navigator.hid.requestDevice({ filters: [{ vendorId: 0x057e }] });
-                    if (devices.length > 0) {
-                        wiimote = devices[0]; await wiimote.open();
-                        await wiimote.sendReport(0x12, new Uint8Array([0x04, 0x31]));
-                        wiimote.addEventListener('inputreport', handleWiiData);
-                        document.getElementById('wii-status').innerText = "Status: Waiting for Calibration (+)";
-                        document.getElementById('wii-status').style.color = "#f9e2af";
-                        document.getElementById('wii-instructions').style.display = "block";
-                        document.getElementById('wii-connect').style.display = "none";
-                    }
-                } catch (err) { alert("Wiimote connection failed."); }
-            };
+    if (!navigator.hid) return alert("WebHID is not supported.");
+    try {
+        const devices = await navigator.hid.requestDevice({ filters: [{ vendorId: 0x057e }] });
+        if (devices.length > 0) {
+            wiimote = devices[0]; 
+            await wiimote.open();
+            
+            // TRICK 1: Poke the Wiimote to wake up its command processor (Turn on Player 1 LED)
+            try {
+                await wiimote.sendReport(0x11, new Uint8Array([0x10])); 
+            } catch(e) { console.warn("LED poke failed, continuing..."); }
+            
+            // Wait 50ms to let the Wiimote process the LED command
+            await new Promise(r => setTimeout(r, 50));
+
+            // TRICK 2: Now forcefully demand the motion sensors (Mode 0x31)
+            await wiimote.sendReport(0x12, new Uint8Array([0x00, 0x31]));
+            
+            wiimote.addEventListener('inputreport', handleWiiData);
+            document.getElementById('wii-status').innerText = "Status: Waiting for Calibration (+)";
+            document.getElementById('wii-status').style.color = "#f9e2af";
+            document.getElementById('wii-instructions').style.display = "block";
+            document.getElementById('wii-connect').style.display = "none";
+        }
+    } catch (err) { alert("Wiimote connection failed."); }
+};
 
             function handleWiiData(event) {
                 if (event.reportId === 0x30) {
