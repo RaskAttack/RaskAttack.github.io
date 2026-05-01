@@ -60,7 +60,8 @@
                 <p id="wii-instructions" style="font-size: 0.85em; color: #f9e2af; display: none;">
                     <strong>CALIBRATE:</strong> Hold flat facing forward, press <b>+</b><br>
                     <strong>GRIPPER:</strong> Press <b>B</b> (Trigger)<br>
-                    <strong>PAUSE ARM:</strong> Hold <b>A</b> while moving
+                    <strong>WRIST:</strong> Use the <b>D-Pad</b><br>
+                    <strong>PAUSE:</strong> Hold <b>A</b>
                 </p>
             </div>
 
@@ -128,20 +129,14 @@
     </div>
 
     <script>
-        // SAFE BOOTUP: Wrap everything in a giant try-catch so the UI always builds
         try {
             let port, writer;
             const currentPos = [90, 90, 90, 90, 90, 90, 90];
             let currentFrames = [];
             
-            // Safe Local Storage
             let savedAnimations;
-            try {
-                savedAnimations = JSON.parse(localStorage.getItem('robotAnims')) || Array(15).fill(null);
-            } catch(e) {
-                console.warn("Local storage disabled or corrupted, using temporary memory.");
-                savedAnimations = Array(15).fill(null);
-            }
+            try { savedAnimations = JSON.parse(localStorage.getItem('robotAnims')) || Array(15).fill(null); } 
+            catch(e) { savedAnimations = Array(15).fill(null); }
 
             const servoNames = ['Base (0)', 'Shoulders (1 & 2)', 'Hidden', 'Elbow (3)', 'Wrist Pitch (4)', 'Wrist Roll (5)', 'Gripper (6)'];
             const sliderDiv = document.getElementById('sliders');
@@ -164,28 +159,21 @@
             };
             updateSlotDropdown();
 
-            // --- 3D ENGINE WITH SAFETY NET ---
-            let scene, camera, renderer;
-            let baseGroup, shoulderGroup, elbowGroup, wristGroup, gripperMesh;
-            let is3DActive = false;
-
+            // --- 3D ENGINE ---
+            let scene, camera, renderer, baseGroup, shoulderGroup, elbowGroup, wristGroup, gripperMesh, is3DActive = false;
             try {
                 if(typeof THREE === 'undefined') throw new Error("THREE.js failed to download.");
                 const container = document.getElementById('sim-container');
                 scene = new THREE.Scene();
                 camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-                camera.position.set(40, 40, 60);
-                camera.lookAt(0, 15, 0);
+                camera.position.set(40, 40, 60); camera.lookAt(0, 15, 0);
 
-                // This is where Linux usually crashes if drivers are weird
                 renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
                 renderer.setSize(container.clientWidth, container.clientHeight);
                 container.appendChild(renderer.domElement);
 
                 scene.add(new THREE.AmbientLight(0x555555));
-                const light = new THREE.DirectionalLight(0xffffff, 1);
-                light.position.set(20, 50, 20);
-                scene.add(light);
+                const light = new THREE.DirectionalLight(0xffffff, 1); light.position.set(20, 50, 20); scene.add(light);
                 scene.add(new THREE.GridHelper(60, 20, 0x585b70, 0x313244));
 
                 const matPrimary = new THREE.MeshPhongMaterial({ color: 0x89b4fa });
@@ -214,141 +202,119 @@
                 window.addEventListener('resize', () => {
                     if(!is3DActive) return;
                     camera.aspect = container.clientWidth / container.clientHeight;
-                    camera.updateProjectionMatrix();
-                    renderer.setSize(container.clientWidth, container.clientHeight);
+                    camera.updateProjectionMatrix(); renderer.setSize(container.clientWidth, container.clientHeight);
                 });
-
                 is3DActive = true;
                 
                 function animate3D() {
-                    if(!is3DActive) return;
-                    requestAnimationFrame(animate3D);
+                    if(!is3DActive) return; requestAnimationFrame(animate3D);
                     const toRad = (deg) => (deg - 90) * (Math.PI / 180);
-                    baseGroup.rotation.y = -toRad(currentPos[0]);
-                    shoulderGroup.rotation.x = -toRad(currentPos[1]);
-                    elbowGroup.rotation.x = -toRad(currentPos[3]);
-                    wristGroup.rotation.x = -toRad(currentPos[4]);
-                    wristGroup.rotation.y = -toRad(currentPos[5]);
-                    let gripScale = 1 - ((currentPos[6] - 90) / 180); 
-                    gripperMesh.scale.set(Math.max(0.2, gripScale), 1, 1);
+                    baseGroup.rotation.y = -toRad(currentPos[0]); shoulderGroup.rotation.x = -toRad(currentPos[1]);
+                    elbowGroup.rotation.x = -toRad(currentPos[3]); wristGroup.rotation.x = -toRad(currentPos[4]); wristGroup.rotation.y = -toRad(currentPos[5]);
+                    gripperMesh.scale.set(Math.max(0.2, 1 - ((currentPos[6] - 90) / 180)), 1, 1);
                     renderer.render(scene, camera);
                 }
                 animate3D();
+            } catch(e) { is3DActive = false; document.getElementById('webgl-error').style.display = "block"; }
 
-            } catch(e) {
-                console.error("WebGL 3D Engine failed to start:", e);
-                is3DActive = false;
-                document.getElementById('webgl-error').style.display = "block";
-            }
-
-            // --- HARDWARE & WIIMOTE ---
+            // --- HARDWARE ---
             window.updateServo = async function(index, value) {
-                currentPos[index] = parseInt(value);
-                document.getElementById(`v${index}`).innerText = value + "°";
-                queueSerialUpdate(); 
+                currentPos[index] = parseInt(value); document.getElementById(`v${index}`).innerText = value + "°"; queueSerialUpdate(); 
             };
 
             let serialTimeout = null;
             function queueSerialUpdate() {
-                if (!serialTimeout && writer) {
-                    serialTimeout = setTimeout(async () => {
-                        await writer.write(new TextEncoder().encode(`ALL:${currentPos.join(',')}\n`));
-                        serialTimeout = null;
-                    }, 50); 
-                }
+                if (!serialTimeout && writer) { serialTimeout = setTimeout(async () => { await writer.write(new TextEncoder().encode(`ALL:${currentPos.join(',')}\n`)); serialTimeout = null; }, 50); }
             }
 
             document.getElementById('connect').onclick = async () => {
                 try {
-                    port = await navigator.serial.requestPort();
-                    await port.open({ baudRate: 9600 });
-                    writer = port.writable.getWriter();
-                    document.getElementById('status').innerText = "Arduino: Connected!";
-                    document.getElementById('status').style.color = "#a6e3a1";
-                    document.getElementById('connect').style.display = "none";
+                    port = await navigator.serial.requestPort(); await port.open({ baudRate: 9600 });
+                    writer = port.writable.getWriter(); document.getElementById('status').innerText = "Arduino: Connected!"; document.getElementById('status').style.color = "#a6e3a1"; document.getElementById('connect').style.display = "none";
                 } catch (err) { alert("USB Connection failed."); }
             };
 
+            // --- WIIMOTE & SMART FILTERING ---
             let wiimote = null, isWiiCalibrated = false, wiiCalib = {x: 128, y: 128, z: 128}, gripperClosed = false, lastB = false;
+            let smoothX = 128, smoothY = 128; const filterSpeed = 0.15; let isRumbling = false;
+
+            async function triggerRumble() {
+                if (!wiimote || isRumbling) return; isRumbling = true;
+                try { await wiimote.sendReport(0x11, new Uint8Array([0x11])); setTimeout(async () => { if(wiimote) await wiimote.sendReport(0x11, new Uint8Array([0x10])); isRumbling = false; }, 200); } catch(e) { isRumbling = false; }
+            }
 
             window.connectWiimote = async function() {
-    if (!navigator.hid) return alert("WebHID is not supported.");
-    try {
-        const devices = await navigator.hid.requestDevice({ filters: [{ vendorId: 0x057e }] });
-        if (devices.length > 0) {
-            wiimote = devices[0]; 
-            await wiimote.open();
-            
-            // TRICK 1: Poke the Wiimote to wake up its command processor (Turn on Player 1 LED)
-            try {
-                await wiimote.sendReport(0x11, new Uint8Array([0x10])); 
-            } catch(e) { console.warn("LED poke failed, continuing..."); }
-            
-            // Wait 50ms to let the Wiimote process the LED command
-            await new Promise(r => setTimeout(r, 50));
-
-            // TRICK 2: Now forcefully demand the motion sensors (Mode 0x31)
-            await wiimote.sendReport(0x12, new Uint8Array([0x00, 0x31]));
-            
-            wiimote.addEventListener('inputreport', handleWiiData);
-            document.getElementById('wii-status').innerText = "Status: Waiting for Calibration (+)";
-            document.getElementById('wii-status').style.color = "#f9e2af";
-            document.getElementById('wii-instructions').style.display = "block";
-            document.getElementById('wii-connect').style.display = "none";
-        }
-    } catch (err) { alert("Wiimote connection failed."); }
-};
+                if (!navigator.hid) return alert("WebHID is not supported.");
+                try {
+                    const devices = await navigator.hid.requestDevice({ filters: [{ vendorId: 0x057e }] });
+                    if (devices.length > 0) {
+                        wiimote = devices[0]; await wiimote.open();
+                        try { await wiimote.sendReport(0x11, new Uint8Array([0x10])); } catch(e) {}
+                        await new Promise(r => setTimeout(r, 50));
+                        await wiimote.sendReport(0x12, new Uint8Array([0x00, 0x31]));
+                        wiimote.addEventListener('inputreport', handleWiiData);
+                        document.getElementById('wii-status').innerText = "Status: Waiting for Calibration (+)"; document.getElementById('wii-status').style.color = "#f9e2af"; document.getElementById('wii-instructions').style.display = "block"; document.getElementById('wii-connect').style.display = "none";
+                    }
+                } catch (err) { alert("Wiimote connection failed."); }
+            };
 
             function handleWiiData(event) {
-                if (event.reportId === 0x30) {
-                    document.getElementById('wii-status').innerText = "ERROR: Stuck in Button-Only Mode (0x30)";
-                    document.getElementById('wii-status').style.color = "#f38ba8"; return;
-                }
+                if (event.reportId === 0x30) { document.getElementById('wii-status').innerText = "ERROR: Keep evtest open!"; document.getElementById('wii-status').style.color = "#f38ba8"; return; }
                 if (event.reportId !== 0x31) return;
                 
                 const data = event.data, btn0 = data.getUint8(0), btn1 = data.getUint8(1);
                 const btnA = (btn1 & 0x08) !== 0, btnB = (btn1 & 0x04) !== 0, btnPlus = (btn0 & 0x10) !== 0;
+                const dpadLeft = (btn0 & 0x01) !== 0, dpadRight = (btn0 & 0x02) !== 0, dpadDown = (btn0 & 0x04) !== 0, dpadUp = (btn0 & 0x08) !== 0;
                 const ax = data.getUint8(2), ay = data.getUint8(3), az = data.getUint8(4);
 
-                if (btnPlus) { wiiCalib = {x: ax, y: ay, z: az}; isWiiCalibrated = true; document.getElementById('wii-status').innerText = "Status: Calibrated & Active!"; document.getElementById('wii-status').style.color = "#a6e3a1"; }
+                if (btnPlus) { wiiCalib = {x: ax, y: ay, z: az}; smoothX = ax; smoothY = ay; isWiiCalibrated = true; document.getElementById('wii-status').innerText = "Status: Calibrated & Active!"; document.getElementById('wii-status').style.color = "#a6e3a1"; triggerRumble(); }
                 if (!isWiiCalibrated) return;
 
-                if (btnB && !lastB) {
-                    gripperClosed = !gripperClosed; let gripVal = gripperClosed ? 180 : 90;
-                    currentPos[6] = gripVal; document.getElementById('s6').value = gripVal; document.getElementById('v6').innerText = gripVal + "°"; queueSerialUpdate();
-                }
+                if (btnB && !lastB) { gripperClosed = !gripperClosed; currentPos[6] = gripperClosed ? 180 : 90; document.getElementById('s6').value = currentPos[6]; document.getElementById('v6').innerText = currentPos[6] + "°"; queueSerialUpdate(); }
                 lastB = btnB;
+
+                let wristChanged = false;
+                if (dpadUp) { currentPos[4] = Math.min(180, currentPos[4] + 2); wristChanged = true; }
+                if (dpadDown) { currentPos[4] = Math.max(0, currentPos[4] - 2); wristChanged = true; }
+                if (dpadLeft) { currentPos[5] = Math.max(0, currentPos[5] - 2); wristChanged = true; }
+                if (dpadRight) { currentPos[5] = Math.min(180, currentPos[5] + 2); wristChanged = true; }
+                if (wristChanged) {
+                    document.getElementById('s4').value = currentPos[4]; document.getElementById('v4').innerText = currentPos[4] + "°"; document.getElementById('s5').value = currentPos[5]; document.getElementById('v5').innerText = currentPos[5] + "°";
+                    if(currentPos[4] === 0 || currentPos[4] === 180 || currentPos[5] === 0 || currentPos[5] === 180) triggerRumble();
+                    queueSerialUpdate();
+                }
 
                 if (btnA) { document.getElementById('wii-status').innerText = "Status: PAUSED (Moving Freely)"; document.getElementById('wii-status').style.color = "#f38ba8"; return; } 
                 else { document.getElementById('wii-status').innerText = "Status: Calibrated & Active!"; document.getElementById('wii-status').style.color = "#a6e3a1"; }
 
-                let pitch = 90 + ((ay - wiiCalib.y) * 3), roll = 90 - ((ax - wiiCalib.x) * 3);  
-                pitch = Math.max(0, Math.min(180, Math.round(pitch))); roll = Math.max(0, Math.min(180, Math.round(roll)));
+                smoothX = (ax * filterSpeed) + (smoothX * (1 - filterSpeed)); smoothY = (ay * filterSpeed) + (smoothY * (1 - filterSpeed));
+                let pitch = 90 + ((smoothY - wiiCalib.y) * 1.5), roll = 90 - ((smoothX - wiiCalib.x) * 1.5), elbow = 180 - (pitch * 0.8);
+                pitch = Math.max(0, Math.min(180, Math.round(pitch))); roll = Math.max(0, Math.min(180, Math.round(roll))); elbow = Math.max(0, Math.min(180, Math.round(elbow)));
 
-                if (currentPos[1] !== pitch || currentPos[0] !== roll) {
-                    currentPos[1] = pitch; currentPos[0] = roll;
+                if (pitch === 0 || pitch === 180 || roll === 0 || roll === 180 || elbow === 0 || elbow === 180) triggerRumble();
+
+                if (currentPos[1] !== pitch || currentPos[0] !== roll || currentPos[3] !== elbow) {
+                    currentPos[1] = pitch; currentPos[0] = roll; currentPos[3] = elbow;
                     document.getElementById('s1').value = pitch; document.getElementById('v1').innerText = pitch + "°";
                     document.getElementById('s0').value = roll; document.getElementById('v0').innerText = roll + "°";
+                    document.getElementById('s3').value = elbow; document.getElementById('v3').innerText = elbow + "°";
                     queueSerialUpdate();
                 }
             }
 
-            // --- ANIMATION / MACRO EXPORTS (Attached to Window for HTML buttons) ---
+            // --- ANIMATION & MACRO PLAYERS ---
             window.saveFrame = function() { currentFrames.push([...currentPos]); document.getElementById('frameCount').innerText = currentFrames.length; };
             window.clearFrames = function() { window.stopPlay(); currentFrames = []; document.getElementById('frameCount').innerText = "0"; };
 
             let isPlaying = false, isPaused = false, playIndex = 0, isMacroPlaying = false, activeLoopId = 0;
-
             window.togglePlay = async function() {
                 if (currentFrames.length === 0) return alert("Add some frames first!");
                 if (!isPlaying) { isPlaying = true; isPaused = false; activeLoopId++; document.getElementById('play-btn').innerText = "⏸️ Pause"; playLoop(activeLoopId); } 
                 else if (!isPaused) { isPaused = true; document.getElementById('play-btn').innerText = "▶️ Resume"; } 
                 else { isPaused = false; document.getElementById('play-btn').innerText = "⏸️ Pause"; }
             };
-
             window.stopPlay = function() {
-                isPlaying = false; isPaused = false; isMacroPlaying = false; activeLoopId++; playIndex = 0;
-                document.getElementById('play-btn').innerText = "▶️ Play";
+                isPlaying = false; isPaused = false; isMacroPlaying = false; activeLoopId++; playIndex = 0; document.getElementById('play-btn').innerText = "▶️ Play";
                 let ssBtn = document.getElementById('slideshow-btn'), shBtn = document.getElementById('shuffle-btn');
                 if (ssBtn && shBtn) { ssBtn.innerText = "🎞️ Slideshow All"; ssBtn.className = "purple"; ssBtn.disabled = false; shBtn.innerText = "🔀 Shuffle All"; shBtn.className = "purple"; shBtn.disabled = false; }
             };
@@ -389,10 +355,10 @@
                 }
             };
 
+            // --- EXPORT/IMPORT ---
             window.saveToSlot = function() {
                 if(currentFrames.length === 0) return alert("No active frames to save!");
-                const slot = parseInt(document.getElementById('slotSelect').value);
-                savedAnimations[slot] = JSON.parse(JSON.stringify(currentFrames)); 
+                const slot = parseInt(document.getElementById('slotSelect').value); savedAnimations[slot] = JSON.parse(JSON.stringify(currentFrames)); 
                 try { localStorage.setItem('robotAnims', JSON.stringify(savedAnimations)); } catch(e){}
                 window.updateSlotDropdown(); document.getElementById('slotSelect').value = slot; alert(`Saved to Slot ${slot+1}!`);
             };
@@ -403,7 +369,6 @@
                 currentFrames[0].forEach((val, i) => { if(i !== 2) { document.getElementById(`s${i}`).value = val; document.getElementById(`v${i}`).innerText = val + "°"; } currentPos[i] = val; });
                 queueSerialUpdate(); alert(`Loaded Slot ${slot+1}!`);
             };
-
             window.exportAll = function() { document.getElementById('io-box').value = JSON.stringify(savedAnimations); alert("Exported! Copy the text."); };
 
             let importConflicts = [], pendingImportData = [], currentConflictIndex = 0;
@@ -422,14 +387,12 @@
                     if (importConflicts.length > 0) { currentConflictIndex = 0; showConflictUI(); } else finishImport();
                 } catch(e) { alert("Invalid code! Ensure you copied all 15 slots."); }
             };
-
             function showConflictUI() {
                 let conf = importConflicts[currentConflictIndex];
                 document.getElementById('conflict-text').innerText = `Conflict detected in Slot ${conf.slot + 1}:`;
                 document.getElementById('conf-local').innerText = conf.local.length; document.getElementById('conf-imp').innerText = conf.imp.length;
                 document.getElementById('conflict-modal').style.display = "flex";
             }
-
             window.resolveConflict = function(decision) {
                 let conf = importConflicts[currentConflictIndex];
                 if (decision === 'local') pendingImportData[conf.slot] = conf.local;
@@ -438,13 +401,8 @@
                 currentConflictIndex++;
                 if (currentConflictIndex < importConflicts.length) showConflictUI(); else { document.getElementById('conflict-modal').style.display = "none"; finishImport(); }
             };
-
             window.cancelImport = function() { document.getElementById('conflict-modal').style.display = "none"; alert("Import cancelled."); };
-            function finishImport() { 
-                savedAnimations = pendingImportData; 
-                try { localStorage.setItem('robotAnims', JSON.stringify(savedAnimations)); } catch(e){} 
-                window.updateSlotDropdown(); alert("Import complete!"); 
-            }
+            function finishImport() { savedAnimations = pendingImportData; try { localStorage.setItem('robotAnims', JSON.stringify(savedAnimations)); } catch(e){} window.updateSlotDropdown(); alert("Import complete!"); }
 
         } catch (fatalError) {
             console.error("FATAL SCRIPT ERROR:", fatalError);
