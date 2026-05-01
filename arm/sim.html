@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Robot Animator Pro: Sim Edition</title>
+    <title>Robot Animator Pro: Sim Edition (IR Tracker)</title>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <style>
         body { font-family: sans-serif; background: #1e1e2e; color: #cdd6f4; margin: 0; display: flex; height: 100vh; overflow: hidden; }
@@ -54,11 +54,11 @@
             <p id="status" style="color: #f9e2af; font-weight: bold; text-align:center;">Arduino: Disconnected</p>
             
             <div class="wiimote-box" style="text-align:center;">
-                <h3 style="color: #cba6f7; margin-bottom: 5px;">🎮 Wiimote Controller</h3>
+                <h3 style="color: #cba6f7; margin-bottom: 5px;">🎮 Wiimote (IR Laser Mode)</h3>
                 <button id="wii-connect" class="purple" onclick="connectWiimote()">📡 Connect Wiimote</button>
                 <p id="wii-status" style="color: #a6adc8; font-weight: bold; margin-bottom: 0;">Status: Disconnected</p>
                 <p id="wii-instructions" style="font-size: 0.85em; color: #f9e2af; display: none;">
-                    <strong>CALIBRATE:</strong> Hold flat facing forward, press <b>+</b><br>
+                    <strong>MOVE:</strong> Point at your DIY Sensor Bar!<br>
                     <strong>GRIPPER:</strong> Press <b>B</b> (Trigger)<br>
                     <strong>WRIST:</strong> Use the <b>D-Pad</b><br>
                     <strong>PAUSE:</strong> Hold <b>A</b>
@@ -234,9 +234,10 @@
                 } catch (err) { alert("USB Connection failed."); }
             };
 
-            // --- WIIMOTE & SMART FILTERING ---
-            let wiimote = null, isWiiCalibrated = false, wiiCalib = {x: 128, y: 128, z: 128}, gripperClosed = false, lastB = false;
-            let smoothX = 128, smoothY = 128; const filterSpeed = 0.15; let isRumbling = false;
+            // --- WIIMOTE IR TRACKING & HAPTICS ---
+            let wiimote = null, gripperClosed = false, lastB = false;
+            let smoothX = 512, smoothY = 384; const filterSpeed = 0.20; 
+            let isRumbling = false;
 
             async function triggerRumble() {
                 if (!wiimote || isRumbling) return; isRumbling = true;
@@ -249,30 +250,45 @@
                     const devices = await navigator.hid.requestDevice({ filters: [{ vendorId: 0x057e }] });
                     if (devices.length > 0) {
                         wiimote = devices[0]; await wiimote.open();
+                        
+                        // 1. Wake up the Wiimote
                         try { await wiimote.sendReport(0x11, new Uint8Array([0x10])); } catch(e) {}
                         await new Promise(r => setTimeout(r, 50));
-                        await wiimote.sendReport(0x12, new Uint8Array([0x00, 0x31]));
+                        
+                        // 2. Enable the IR Camera internal clock
+                        try { await wiimote.sendReport(0x13, new Uint8Array([0x04])); } catch(e) {}
+                        try { await wiimote.sendReport(0x1A, new Uint8Array([0x04])); } catch(e) {}
+                        await new Promise(r => setTimeout(r, 50));
+
+                        // 3. Set to Mode 0x33 (Buttons + Accel + 12 Bytes of IR Camera Data)
+                        await wiimote.sendReport(0x12, new Uint8Array([0x00, 0x33]));
+                        
                         wiimote.addEventListener('inputreport', handleWiiData);
-                        document.getElementById('wii-status').innerText = "Status: Waiting for Calibration (+)"; document.getElementById('wii-status').style.color = "#f9e2af"; document.getElementById('wii-instructions').style.display = "block"; document.getElementById('wii-connect').style.display = "none";
+                        document.getElementById('wii-status').innerText = "Status: Point at the Sensor Bar!"; 
+                        document.getElementById('wii-status').style.color = "#89b4fa"; 
+                        document.getElementById('wii-instructions').style.display = "block"; 
+                        document.getElementById('wii-connect').style.display = "none";
                     }
                 } catch (err) { alert("Wiimote connection failed."); }
             };
 
             function handleWiiData(event) {
+                // If it's stuck in 0x30, remind you to keep evtest running!
                 if (event.reportId === 0x30) { document.getElementById('wii-status').innerText = "ERROR: Keep evtest open!"; document.getElementById('wii-status').style.color = "#f38ba8"; return; }
-                if (event.reportId !== 0x31) return;
                 
-                const data = event.data, btn0 = data.getUint8(0), btn1 = data.getUint8(1);
-                const btnA = (btn1 & 0x08) !== 0, btnB = (btn1 & 0x04) !== 0, btnPlus = (btn0 & 0x10) !== 0;
+                // We are only looking for Mode 0x33 now (which includes IR data)
+                if (event.reportId !== 0x33) return; 
+                
+                const data = event.data;
+                const btn0 = data.getUint8(0), btn1 = data.getUint8(1);
+                const btnA = (btn1 & 0x08) !== 0, btnB = (btn1 & 0x04) !== 0;
                 const dpadLeft = (btn0 & 0x01) !== 0, dpadRight = (btn0 & 0x02) !== 0, dpadDown = (btn0 & 0x04) !== 0, dpadUp = (btn0 & 0x08) !== 0;
-                const ax = data.getUint8(2), ay = data.getUint8(3), az = data.getUint8(4);
 
-                if (btnPlus) { wiiCalib = {x: ax, y: ay, z: az}; smoothX = ax; smoothY = ay; isWiiCalibrated = true; document.getElementById('wii-status').innerText = "Status: Calibrated & Active!"; document.getElementById('wii-status').style.color = "#a6e3a1"; triggerRumble(); }
-                if (!isWiiCalibrated) return;
-
+                // Gripper Logic
                 if (btnB && !lastB) { gripperClosed = !gripperClosed; currentPos[6] = gripperClosed ? 180 : 90; document.getElementById('s6').value = currentPos[6]; document.getElementById('v6').innerText = currentPos[6] + "°"; queueSerialUpdate(); }
                 lastB = btnB;
 
+                // D-Pad Wrist Logic
                 let wristChanged = false;
                 if (dpadUp) { currentPos[4] = Math.min(180, currentPos[4] + 2); wristChanged = true; }
                 if (dpadDown) { currentPos[4] = Math.max(0, currentPos[4] - 2); wristChanged = true; }
@@ -284,20 +300,53 @@
                     queueSerialUpdate();
                 }
 
-                if (btnA) { document.getElementById('wii-status').innerText = "Status: PAUSED (Moving Freely)"; document.getElementById('wii-status').style.color = "#f38ba8"; return; } 
-                else { document.getElementById('wii-status').innerText = "Status: Calibrated & Active!"; document.getElementById('wii-status').style.color = "#a6e3a1"; }
+                if (btnA) { document.getElementById('wii-status').innerText = "Status: PAUSED (Moving Freely)"; document.getElementById('wii-status').style.color = "#f38ba8"; return; }
 
-                smoothX = (ax * filterSpeed) + (smoothX * (1 - filterSpeed)); smoothY = (ay * filterSpeed) + (smoothY * (1 - filterSpeed));
-                let pitch = 90 + ((smoothY - wiiCalib.y) * 1.5), roll = 90 - ((smoothX - wiiCalib.x) * 1.5), elbow = 180 - (pitch * 0.8);
-                pitch = Math.max(0, Math.min(180, Math.round(pitch))); roll = Math.max(0, Math.min(180, Math.round(roll))); elbow = Math.max(0, Math.min(180, Math.round(elbow)));
+                // --- THE IR CAMERA MATH ---
+                // The Wii camera has a resolution of 1024x768. 1023 means "I can't see the light."
+                const ir1x = data.getUint8(5) | ((data.getUint8(7) & 0x30) << 4);
+                const ir1y = data.getUint8(6) | ((data.getUint8(7) & 0xC0) << 2);
+                
+                const ir2x = data.getUint8(8) | ((data.getUint8(7) & 0x03) << 8);
+                const ir2y = data.getUint8(9) | ((data.getUint8(7) & 0x0C) << 6);
 
-                if (pitch === 0 || pitch === 180 || roll === 0 || roll === 180 || elbow === 0 || elbow === 180) triggerRumble();
+                // If it can't see BOTH dots, don't move the arm (safety feature)
+                if (ir1x === 1023 || ir2x === 1023) {
+                    document.getElementById('wii-status').innerText = "Status: Point at the screen! (Cannot see sensor bar)";
+                    document.getElementById('wii-status').style.color = "#f9e2af";
+                    return;
+                } else {
+                    document.getElementById('wii-status').innerText = "Status: IR Laser Tracking Active! 🟢";
+                    document.getElementById('wii-status').style.color = "#a6e3a1";
+                }
 
-                if (currentPos[1] !== pitch || currentPos[0] !== roll || currentPos[3] !== elbow) {
-                    currentPos[1] = pitch; currentPos[0] = roll; currentPos[3] = elbow;
-                    document.getElementById('s1').value = pitch; document.getElementById('v1').innerText = pitch + "°";
-                    document.getElementById('s0').value = roll; document.getElementById('v0').innerText = roll + "°";
-                    document.getElementById('s3').value = elbow; document.getElementById('v3').innerText = elbow + "°";
+                // Calculate the midpoint between the two dots (where you are aiming)
+                let midX = (ir1x + ir2x) / 2;
+                let midY = (ir1y + ir2y) / 2;
+
+                // Apply smoothing so the laser pointer doesn't jitter
+                smoothX = (midX * filterSpeed) + (smoothX * (1 - filterSpeed));
+                smoothY = (midY * filterSpeed) + (smoothY * (1 - filterSpeed));
+
+                // Map the Camera resolution (1024x768) to Robot Degrees (0-180)
+                // We invert X so the robot mirrors your hand correctly
+                let targetBase = 180 - Math.round((smoothX / 1024) * 180);
+                let targetPitch = Math.round((smoothY / 768) * 180);
+                
+                // Synergistic IK for the elbow
+                let targetElbow = 180 - (targetPitch * 0.8);
+
+                targetBase = Math.max(0, Math.min(180, targetBase));
+                targetPitch = Math.max(0, Math.min(180, targetPitch));
+                targetElbow = Math.max(0, Math.min(180, Math.round(targetElbow)));
+
+                if (currentPos[1] !== targetPitch || currentPos[0] !== targetBase || currentPos[3] !== targetElbow) {
+                    currentPos[1] = targetPitch; currentPos[0] = targetBase; currentPos[3] = targetElbow;
+                    
+                    document.getElementById('s1').value = targetPitch; document.getElementById('v1').innerText = targetPitch + "°";
+                    document.getElementById('s0').value = targetBase; document.getElementById('v0').innerText = targetBase + "°";
+                    document.getElementById('s3').value = targetElbow; document.getElementById('v3').innerText = targetElbow + "°";
+                    
                     queueSerialUpdate();
                 }
             }
